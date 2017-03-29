@@ -21,7 +21,7 @@
 
 #include <iostream>
 
-#include <automotivedata/GeneratedHeaders_AutomotiveData.h>
+#include <automotivedata/GeneratedHeaders/AutomotiveData.h>
 
 #include "odvdscaledcarsdatamodel/generated/chalmersrevere/scaledcars/ExampleMessage.h"
 
@@ -60,8 +60,8 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Example::body() {
 
         // Example how to send commands to the vehicle.
         automotive::VehicleControl vc;
-        vc.setSpeed(2);
-        vc.setSteeringWheelAngle(5 * cartesian::Constants::DEG2RAD);
+        vc.setSpeed(0);
+        vc.setSteeringWheelAngle(15 * cartesian::Constants::DEG2RAD);
         Container c(vc);
         getConference().send(c);
     }

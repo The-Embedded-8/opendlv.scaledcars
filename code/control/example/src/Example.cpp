@@ -61,7 +61,7 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Example::body() {
 
         // Example how to send commands to the vehicle.
         automotive::VehicleControl vc;
-        vc.setSpeed(2);
+        vc.setSpeed(50);
         vc.setSteeringWheelAngle(5 * cartesian::Constants::DEG2RAD);
         Container c(vc);
         getConference().send(c);

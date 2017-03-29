@@ -37,6 +37,7 @@ using namespace odcore::data;
 Example::Example(const int &argc, char **argv)
     : TimeTriggeredConferenceClientModule(argc, argv, "scaledcars-control-example") {}
 
+
 Example::~Example() {}
 
 void Example::setUp() {}
@@ -60,8 +61,8 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Example::body() {
 
         // Example how to send commands to the vehicle.
         automotive::VehicleControl vc;
-        vc.setSpeed(0);
-        vc.setSteeringWheelAngle(15 * cartesian::Constants::DEG2RAD);
+        vc.setSpeed(50);
+        vc.setSteeringWheelAngle(5 * cartesian::Constants::DEG2RAD);
         Container c(vc);
         getConference().send(c);
     }

@@ -21,7 +21,7 @@
 
 #include <iostream>
 
-#include <opencv/cv>
+#include <opencv/cv.h>
 #include <opencv/highgui.h>
 
 #include <opendavinci/odcore/base/Lock.h>

@@ -39,6 +39,11 @@ ENDIF()
 INCLUDE (CompileFlags)
 
 ###########################################################################
+# Find and configure CxxTest.
+#ET (CXXTEST_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../cxxtest") 
+#INCLUDE (CheckCxxTestEnvironment)
+
+###########################################################################
 # Find OpenDaVINCI.
 SET(OPENDAVINCI_DIR "${CMAKE_INSTALL_PREFIX}")
 FIND_PACKAGE (OpenDaVINCI REQUIRED)
@@ -122,7 +127,7 @@ ENDIF(CXXTEST_FOUND)
 
 ###########################################################################
 # Install this project.
-INSTALL(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin/miniature COMPONENT software)
+INSTALL(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin COMPONENT software)
 # This project does not have a manual page so far.
 #INSTALL(FILES man/${PROJECT_NAME}.1 DESTINATION man/man1 COMPONENT software)
 

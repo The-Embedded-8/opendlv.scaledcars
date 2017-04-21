@@ -65,6 +65,7 @@ namespace automotive {
                         }
 
                         cvCvtColor(tmpFrame, m_image, CV_BGR2GRAY);
+
                     }
                     else {
                         m_image = cvRetrieveFrame(m_capture);
@@ -82,7 +83,7 @@ namespace automotive {
             if ( (dest != NULL) && (size > 0) && (m_image != NULL) ) {
                 ::memcpy(dest, m_image->imageData, size);
 
-                cvShowImage("WindowShowImage", m_image);
+                // cvShowImage("WindowShowImage", m_image);
                 cvWaitKey(10);
 
                 retVal = true;

@@ -21,7 +21,12 @@
 #include <cstring>
 #include <cmath>
 #include <iostream>
-
+#include <stdint.h>
+#include <string>
+#include <memory>
+#include <opendavinci/odcore/wrapper/SerialPort.h>
+#include <opendavinci/odcore/wrapper/SerialPortFactory.h>
+#include <time.h>
 #include "opendavinci/odcore/base/KeyValueConfiguration.h"
 #include "opendavinci/odcore/data/Container.h"
 #include "opendavinci/odcore/data/TimeStamp.h"
@@ -37,6 +42,8 @@
 namespace automotive {
     namespace miniature {
 
+        using namespace odcore;
+        using namespace odcore::wrapper;
         using namespace std;
         using namespace odcore::base;
         using namespace odcore::data;
@@ -99,6 +106,8 @@ namespace automotive {
             if (m_camera.get() == NULL) {
                 cerr << "No valid camera type defined." << endl;
             }
+
+            //
         }
 
         void Proxy::tearDown() {
@@ -122,7 +131,8 @@ namespace automotive {
             uint32_t captureCounter = 0;
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // Capture frame.
-                if (m_camera.get() != NULL) {
+                if (m_camera.get() != NULL)
+                {
                     odcore::data::image::SharedImage si = m_camera->capture();
 
                     Container c(si);
@@ -130,7 +140,7 @@ namespace automotive {
                     captureCounter++;
                 }
 
-                // Get sensor data from IR/US.
+                // here add your serial loop
             }
 
             cout << "Proxy: Captured " << captureCounter << " frames." << endl;

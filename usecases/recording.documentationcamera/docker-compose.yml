@@ -50,9 +50,10 @@ services:
             - proxy-camera
         volumes:
             - ~/recordings:/opt/recordings
+            - /tmp/.X11-unix:/tmp/.X11-unix
         user: odv
         network_mode: host
         ipc: host
-        working_dir: "/opt/recordings"
-        command: "/opt/od4/bin/odrecorderh264 --cid=${CID}"
+        working_dir: "/opt/opendlv.scaledcars/bin/miniature"
+        command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=${CID}"
 

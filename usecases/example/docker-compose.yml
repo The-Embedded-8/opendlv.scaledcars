@@ -35,9 +35,10 @@ services:
         depends_on:
             - odsupercomponent
         devices:
-            - "/dev/video0:/dev/video0"
+            - "/dev/video1:/dev/video0"
+            - "/dev/ttyACM3:/dev/ttyACM3"
+        privileged: true
         user: odv
-        working_dir: "/opt/opendlv.scaledcars/bin/miniature"
         network_mode: host
         ipc: host
         volumes:

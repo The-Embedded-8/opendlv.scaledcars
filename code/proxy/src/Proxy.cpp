@@ -29,6 +29,8 @@
 #include <time.h>
 #include "opendavinci/odcore/base/KeyValueConfiguration.h"
 #include "opendavinci/odcore/data/Container.h"
+#include "opendavinci/odcore/io/conference/ContainerConference.h"
+#include "automotivedata/generated/automotive/VehicleControl.h"
 #include "opendavinci/odcore/data/TimeStamp.h"
 
 #include "OpenCVCamera.h"
@@ -63,7 +65,6 @@ namespace automotive {
             if (getFrequency() < 20) {
                 cerr << endl << endl << "Proxy: WARNING! Running proxy with a LOW frequency (consequence: data updates are too seldom and will influence your algorithms in a negative manner!) --> suggestions: --freq=20 or higher! Current frequency: " << getFrequency() << " Hz." << endl << endl << endl;
             }
-
             // Get configuration data.
             KeyValueConfiguration kv = getKeyValueConfiguration();
 
@@ -129,6 +130,18 @@ namespace automotive {
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Proxy::body() {
             uint32_t captureCounter = 0;
+            // Serial just for testing.......
+            // We are using OpenDaVINCI's std::shared_ptr to automatically
+            // release any acquired resources.
+            try 
+            {
+                std::shared_ptr<SerialPort> serial(SerialPortFactory::createSerialPort("/dev/ttyACM3", 115200));
+                serial->send("ping");
+            }
+            catch(string &exception) {
+                cerr << "Serial port could not be created: " << exception << endl;
+            }
+            int max=0, min=100000;
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // Capture frame.
                 if (m_camera.get() != NULL)
@@ -139,8 +152,16 @@ namespace automotive {
                     distribute(c);
                     captureCounter++;
                 }
-
-                // here add your serial loop
+                //............................code...............................
+                // Vehicle control data from the conference
+                Container vc = getKeyValueDataStore().get(VehicleControl::ID());
+                VehicleControl vd = vc.getData<VehicleControl>();
+                // turn the steering value to an angle
+                int steerAngle =  (int) vd.getSteeringWheelAngle() * 180 / M_PI;
+                unsigned char angle = (unsigned char)(steerAngle + 90);
+                min = ((angle < min) ? (angle) : (min));
+                max = ((angle > max) ? (angle) : (max));
+                cout << "MIN angle is: " << min << " MAX angle is: " << max << " Current is: "<< (int) angle <<endl;
             }
 
             cout << "Proxy: Captured " << captureCounter << " frames." << endl;

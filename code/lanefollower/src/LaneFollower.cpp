@@ -116,6 +116,12 @@ namespace automotive {
         }
 
         void LaneFollower::processImage() {
+            IplImage *gray = cvCreateImage(cvGetSize(m_image),IPL_DEPTH_8U,1);
+            cvCvtColor(m_image,gray,CV_BGR2GRAY);
+            cvSmooth(gray,gray, CV_BLUR, 3,3);
+            cvCanny(gray,gray, 50,200,3);
+            cvMerge(gray,gray,gray, NULL, m_image);
+
             static bool useRightLaneMarking = true;
             double e = 0;
 
@@ -225,9 +231,9 @@ namespace automotive {
 //            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
-            const double Kp = 0.3482626884328734;
+            const double Kp = 0.4482626884328734;
             const double Ki = 3.103197570937628;
-            const double Kd = 0.0;
+                const double Kd = 0.030450210485408566;
 
             const double p = Kp * e;
             const double i = Ki * timeStep * m_eSum;

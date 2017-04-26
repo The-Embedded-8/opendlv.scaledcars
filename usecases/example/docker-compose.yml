@@ -35,10 +35,8 @@ services:
         depends_on:
             - odsupercomponent
         devices:
-            - "/dev/video1:/dev/video0"
-            - "/dev/ttyACM3:/dev/ttyACM3"
-        privileged: true
-        user: odv
+            - "/dev/video0:/dev/video0"
+            - "/dev/ttyUSB0:/dev/ttyACM0"
         network_mode: host
         ipc: host
         volumes:

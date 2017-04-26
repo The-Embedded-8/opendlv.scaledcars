@@ -16,7 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include <chrono>
+#include <thread>
 #include <ctype.h>
 #include <cstring>
 #include <cmath>
@@ -130,18 +131,11 @@ namespace automotive {
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Proxy::body() {
             uint32_t captureCounter = 0;
+            unsigned char old=0;
             // Serial just for testing.......
             // We are using OpenDaVINCI's std::shared_ptr to automatically
             // release any acquired resources.
-            try 
-            {
-                std::shared_ptr<SerialPort> serial(SerialPortFactory::createSerialPort("/dev/ttyACM3", 115200));
-                serial->send("ping");
-            }
-            catch(string &exception) {
-                cerr << "Serial port could not be created: " << exception << endl;
-            }
-            int max=0, min=100000;
+            std::shared_ptr<SerialPort> serial(SerialPortFactory::createSerialPort("/dev/ttyACM0", 115200 ));
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // Capture frame.
                 if (m_camera.get() != NULL)
@@ -159,14 +153,18 @@ namespace automotive {
                 // turn the steering value to an angle
                 int steerAngle =  (int) vd.getSteeringWheelAngle() * 180 / M_PI;
                 unsigned char angle = (unsigned char)(steerAngle + 90);
-                min = ((angle < min) ? (angle) : (min));
-                max = ((angle > max) ? (angle) : (max));
-                cout << "MIN angle is: " << min << " MAX angle is: " << max << " Current is: "<< (int) angle <<endl;
+                std::string toSend(1, angle);
+                if((old != angle))
+                    serial->send(toSend);
+                // cout << "sent: " << angle << endl;
+                // if((old != angle) && ((angle-old < 10) || (angle-old > 10)))
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                old = angle;
             }
 
             cout << "Proxy: Captured " << captureCounter << " frames." << endl;
 
-            return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;
+            return odcore::data::dmcp::ModuleExitCodeMessage::OKAY; 
         }
 
     }

@@ -28,11 +28,14 @@
 #include <opendavinci/odcore/wrapper/SerialPort.h>
 #include <opendavinci/odcore/wrapper/SerialPortFactory.h>
 #include <time.h>
+#include <opendavinci/odcore/base/Thread.h>
 #include "opendavinci/odcore/base/KeyValueConfiguration.h"
 #include "opendavinci/odcore/data/Container.h"
 #include "opendavinci/odcore/io/conference/ContainerConference.h"
 #include "automotivedata/generated/automotive/VehicleControl.h"
 #include "opendavinci/odcore/data/TimeStamp.h"
+
+#include "SerialReceiveBytes.hpp"
 
 #include "OpenCVCamera.h"
 
@@ -40,8 +43,14 @@
     #include "uEyeCamera.h"
 #endif
 
-#include "Proxy.h"
+#include "Proxy.h"  
 
+        // Read from the serial bus
+void SerialReceiveBytes::nextString(const std::string &s)
+{            
+    // Decode bytes recieved from arduino here..
+    std::cout << "Received " << s.length() << " bytes containing '" << s << "'" << "\n";
+}
 namespace automotive {
     namespace miniature {
 
@@ -51,6 +60,7 @@ namespace automotive {
         using namespace odcore::base;
         using namespace odcore::data;
         using namespace odtools::recorder;
+
 
         Proxy::Proxy(const int32_t &argc, char **argv) :
             TimeTriggeredConferenceClientModule(argc, argv, "proxy"),
@@ -130,12 +140,23 @@ namespace automotive {
 
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Proxy::body() {
+            // Fetch the config values from the superComponent
+            const string SERIAL_PORT= getKeyValueConfiguration().getValue<string>("proxy.Arduino.SerialPort");;
+            const uint32_t BAUD_RATE = getKeyValueConfiguration().getValue<uint32_t>("proxy.Arduino.SerialSpeed");
+
+            // Create the serial port
+            std::shared_ptr<SerialPort>
+            serial(SerialPortFactory::createSerialPort(SERIAL_PORT, BAUD_RATE));
+
+            SerialReceiveBytes handler;
+            serial->setStringListener(&handler);
+            // Start listening to the port
+            serial->start();
             uint32_t captureCounter = 0;
             unsigned char old=0;
-            // Serial just for testing.......
-            // We are using OpenDaVINCI's std::shared_ptr to automatically
-            // release any acquired resources.
-            std::shared_ptr<SerialPort> serial(SerialPortFactory::createSerialPort("/dev/ttyACM0", 115200 ));
+
+
+            int max = 0, min=120020102; 
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // Capture frame.
                 if (m_camera.get() != NULL)
@@ -152,13 +173,16 @@ namespace automotive {
                 VehicleControl vd = vc.getData<VehicleControl>();
                 // turn the steering value to an angle
                 int steerAngle =  (int) vd.getSteeringWheelAngle() * 180 / M_PI;
+                min = (steerAngle < min ? steerAngle : min);
+                max = (steerAngle > max ? steerAngle : max);
+                cout << "MAX: " << max << " min: "<< min << endl;
                 unsigned char angle = (unsigned char)(steerAngle + 90);
+                // Encode the byte to a string
                 std::string toSend(1, angle);
-                if((old != angle))
-                    serial->send(toSend);
-                // cout << "sent: " << angle << endl;
-                // if((old != angle) && ((angle-old < 10) || (angle-old > 10)))
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                // Send an order to the arduino only if the previous order we sent is differnet and the diffrence is bigger than 10
+                if((angle != old) && (((angle-old) < 10) || ((angle-old) > 10))) serial->send(toSend);
+                // Sleep to help synchronize with the arduino
+                odcore::base::Thread::usleepFor(100);
                 old = angle;
             }
 

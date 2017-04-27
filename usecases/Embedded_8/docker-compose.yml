@@ -1,0 +1,67 @@
+# docker-compose.yml - Composition of micro-services to run scaled cars software.
+# Copyright (C) 2016 Christian Berger
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# Date: 2016-09-15
+
+version: '2'
+
+services:
+    odsupercomponent:
+        build: .
+        network_mode: host
+        ipc: host
+        volumes:
+             - ./DIT-168:/opt/configuration
+        command: "/opt/od4/bin/odsupercomponent --cid=111 --verbose=1 --configuration=/opt/configuration/configuration --freq=20"
+
+        
+    # scaledcars-proxy:
+    #     build: .
+    #     network_mode: host
+    #     ipc: host
+    #     group_add:
+    #         - video
+    #     depends_on:
+    #         - odsupercomponent
+    #     devices:
+    #         - "/dev/video0:/dev/video0"
+    #         - "/dev/ttyUSB0:/dev/ttyUSB0"
+    #     network_mode: host
+    #     ipc: host
+    #     volumes:
+    #         - ./DIT-168:/opt/configuration
+    #         - /tmp/.X11-unix:/tmp/.X11-unix 
+    #         - ~/recordings:/opt/recordings 
+    #     environment:    
+    #         - DISPLAY=$DISPLAY  
+    #     command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=111 --verbose=1  --freq=20 --configuration=/opt/configuration/configuration"
+    # lanefollower:
+    #     build: .
+    #     depends_on:
+    #         - odsupercomponent
+    #         - scaledcars-proxy
+    #     network_mode: "host"
+    #     ipc: host
+    #     working_dir: "/opt/opendlv.scaledcars/bin"
+    #     environment:    
+    #         - DISPLAY=$DISPLAY
+    #     volumes:
+    #         - ./DIT-168:/opt/configuration
+    #         - /tmp/.X11-unix:/tmp/.X11-unix 
+    #     volumes:
+    #         - .:/opt/scaledcars.data
+    #     command: "/opt/opendlv.scaledcars/bin/lanefollower -e DISPLAY=$DISPLAY --cid=111 --freq=20 --verbose=1"

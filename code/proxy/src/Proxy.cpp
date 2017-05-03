@@ -22,6 +22,7 @@
 #include <cstring>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <stdint.h>
 #include <string>
 #include <memory>
@@ -34,6 +35,7 @@
 #include "opendavinci/odcore/io/conference/ContainerConference.h"
 #include "automotivedata/generated/automotive/VehicleControl.h"
 #include "opendavinci/odcore/data/TimeStamp.h"
+#include <automotivedata/generated/automotive/miniature/SensorBoardData.h>
 
 #include "SerialReceiveBytes.hpp"
 
@@ -45,22 +47,18 @@
 
 #include "Proxy.h"  
 
-        // Read from the serial bus
-void SerialReceiveBytes::nextString(const std::string &s)
-{            
-    // Decode bytes recieved from arduino here..
-    std::cout << "Received " << s.length() << " bytes containing '" << s << "'" << "\n";
-}
+// Global pointer
+automotive::miniature::SensorBoardData * pointer;
+
+using namespace odcore;
+using namespace odcore::wrapper;
+using namespace std;
+using namespace odcore::base;
+using namespace odcore::data;
+using namespace odtools::recorder;
+
 namespace automotive {
     namespace miniature {
-
-        using namespace odcore;
-        using namespace odcore::wrapper;
-        using namespace std;
-        using namespace odcore::base;
-        using namespace odcore::data;
-        using namespace odtools::recorder;
-
 
         Proxy::Proxy(const int32_t &argc, char **argv) :
             TimeTriggeredConferenceClientModule(argc, argv, "proxy"),
@@ -155,8 +153,6 @@ namespace automotive {
             uint32_t captureCounter = 0;
             unsigned char old=0;
 
-
-            int max = 0, min=120020102; 
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // Capture frame.
                 if (m_camera.get() != NULL)
@@ -165,25 +161,36 @@ namespace automotive {
 
                     Container c(si);
                     distribute(c);
+
                     captureCounter++;
                 }
                 //............................code...............................
                 // Vehicle control data from the conference
-                Container vc = getKeyValueDataStore().get(VehicleControl::ID());
-                VehicleControl vd = vc.getData<VehicleControl>();
+                Container container = getKeyValueDataStore().get(VehicleControl::ID());
+                VehicleControl vc = container.getData<VehicleControl>();
+
                 // turn the steering value to an angle
-                int steerAngle =  (int) vd.getSteeringWheelAngle() * 180 / M_PI;
-                min = (steerAngle < min ? steerAngle : min);
-                max = (steerAngle > max ? steerAngle : max);
-                cout << "MAX: " << max << " min: "<< min << endl;
+                int steerAngle =  vc.getSteeringWheelAngle() * 180 / M_PI;
                 unsigned char angle = (unsigned char)(steerAngle + 90);
-                // Encode the byte to a string
+
+                // keep the angle in this range (60 - 120)
+                angle = (angle < 70 ? 60 : (angle > 120 ? 100 : angle));
+                // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
+                angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
+
+                // create the string to send
                 std::string toSend(1, angle);
-                // Send an order to the arduino only if the previous order we sent is differnet and the diffrence is bigger than 10
-                if((angle != old) && (((angle-old) < 10) || ((angle-old) > 10))) serial->send(toSend);
-                // Sleep to help synchronize with the arduino
-                odcore::base::Thread::usleepFor(100);
+
+                // Send an order to the arduino only if the previous order is not euqal
+                if((angle != old)) serial->send(toSend);
+
+                // update the old value
                 old = angle;
+
+                SensorBoardData SBD;
+                pointer = &SBD
+                // Share data.
+                getConference().send(((std::shared_ptr<Container>)(new Container(pointer))));
             }
 
             cout << "Proxy: Captured " << captureCounter << " frames." << endl;
@@ -194,3 +201,46 @@ namespace automotive {
     }
 } // automotive::miniature
 
+// Read from the serial bus
+void SerialReceiveBytes::nextString(const std::string &buffer)
+{   
+    unsigned char byte;    
+    automotive::miniature::SensorBoardData SBD;   
+    // Decode bytes recieved from arduino here..
+    for(unsigned int i = 0; i < buffer.length(); i++)
+    {
+        SBD.setNumberOfSensors(4);
+        // A map to address the sensors with the corresponding values
+        std::map<uint32_t, double> sensordata;
+        // Read one byte at a time from the buffer
+        byte = buffer.at(i);
+        // if the 8th bit is set then it's the ultrasonic sensors
+        if(byte >> 7)
+        {
+            // Read the first 3 bits
+            unsigned char ultra1 = 7 & byte;
+            // Read the second 3 bits
+            unsigned char ultra2 = 7 & byte >> 3;
+            // Ultrasonic FRONT_CENTER (ultra1) at 0
+            sensordata[0] = (double) ultra1;
+            // Ultrasonic FRONT_RIGHT (ultra2) at 1
+            sensordata[1] = (double) ultra2;
+        }
+        else
+        {
+            unsigned char ir1 = 15 & byte;
+            unsigned char ir2 = 15 & byte >> 3;
+            // INFRARED_FRONT_RIGHT (ir1) is at 2
+            sensordata[2] = (double) ir1;
+            // INFRARED_REAR_RIGHT (ir2) is at 3
+            sensordata[3] = (double) ir2;
+        }
+
+        SBD.setMapOfDistances(sensordata);
+        // Send the sensor board data
+        // pointer = &SBD;
+
+    }   
+
+    // std::cout << "Received " << s.length() << " bytes containing '" << (int) input << "'" << "\n";
+}

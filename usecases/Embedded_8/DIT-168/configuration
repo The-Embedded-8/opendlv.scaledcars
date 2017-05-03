@@ -284,8 +284,8 @@ proxy.camera.width = 640 #752-UEYE, 640-OpenCV
 proxy.camera.height = 480
 proxy.camera.bpp = 3 #3-openCV, 1-UEYE
 
-proxy.Arduino.SerialPort=/dev/ttyUSB0
-proxy.Arduino.SerialSpeed=115200
+Proxy.Arduino.UseRealSpeed=0
+proxy.Arduino.SerialPort=/dev/ttyACM0
 
 proxy.numberOfSensors=6
 

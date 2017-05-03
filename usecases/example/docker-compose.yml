@@ -28,37 +28,37 @@ services:
         command: "/opt/od4/bin/odsupercomponent --cid=211 --verbose=1 --configuration=/opt/scaledcars.data/configuration"
 
         
-    scaledcars-proxy:
-        build: .
-        group_add:
-            - video
-        depends_on:
-            - odsupercomponent
-        devices:
-            - "/dev/video0:/dev/video0"
-            - "/dev/ttyUSB0:/dev/ttyACM0"
-        network_mode: host
-        ipc: host
-        volumes:
-            - /tmp/.X11-unix:/tmp/.X11-unix 
-            - ~/recordings:/opt/recordings 
-        environment:    
-            - DISPLAY=$DISPLAY  
-        command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=211 --freq=20 --verbose=1"
+    # scaledcars-proxy:
+    #     build: .
+    #     group_add:
+    #         - video
+    #     depends_on:
+    #         - odsupercomponent
+    #     devices:
+    #         - "/dev/video0:/dev/video0"
+    #         - "/dev/ttyUSB0:/dev/ttyACM0"
+    #     network_mode: host
+    #     ipc: host
+    #     volumes:
+    #         - /tmp/.X11-unix:/tmp/.X11-unix 
+    #         - ~/recordings:/opt/recordings 
+    #     environment:    
+    #         - DISPLAY=$DISPLAY  
+    #     command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=211 --freq=20 --verbose=1"
 
-    lanefollower:
-        build: .
-        depends_on:
-            - odsupercomponent
-            - scaledcars-proxy
-        network_mode: "host"
-        ipc: host
-        user: odv
-        working_dir: "/opt/opendlv.scaledcars/bin"
-        environment:    
-            - DISPLAY=$DISPLAY
-        volumes:
-            - /tmp/.X11-unix:/tmp/.X11-unix 
-        volumes:
-            - .:/opt/scaledcars.data
-        command: "/opt/opendlv.scaledcars/bin/lanefollower --cid=211 --freq=20 --verbose=1"
+    # lanefollower:
+    #     build: .
+    #     depends_on:
+    #         - odsupercomponent
+    #         - scaledcars-proxy
+    #     network_mode: "host"
+    #     ipc: host
+    #     user: odv
+    #     working_dir: "/opt/opendlv.scaledcars/bin"
+    #     environment:    
+    #         - DISPLAY=$DISPLAY
+    #     volumes:
+    #         - /tmp/.X11-unix:/tmp/.X11-unix 
+    #     volumes:
+    #         - .:/opt/scaledcars.data
+    #     command: "/opt/opendlv.scaledcars/bin/lanefollower --cid=211 --freq=20 --verbose=1"

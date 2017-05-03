@@ -39,7 +39,7 @@ services:
     #         - odsupercomponent
     #     devices:
     #         - "/dev/video0:/dev/video0"
-    #         - "/dev/ttyUSB0:/dev/ttyUSB0"
+    #         - "/dev/ttyACM0:/dev/ttyACM1"
     #     network_mode: host
     #     ipc: host
     #     volumes:
@@ -48,7 +48,7 @@ services:
     #         - ~/recordings:/opt/recordings 
     #     environment:    
     #         - DISPLAY=$DISPLAY  
-    #     command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=111 --verbose=1  --freq=20 --configuration=/opt/configuration/configuration"
+    #     command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=111 --verbose=1  --privileged=true --device=/dev/ttyACM0 --device=/dev/video1:/dev/video0 --freq=20 --configuration=/opt/configuration/configuration --freq=10"
     # lanefollower:
     #     build: .
     #     depends_on:
@@ -56,6 +56,7 @@ services:
     #         - scaledcars-proxy
     #     network_mode: "host"
     #     ipc: host
+    #     user: odv
     #     working_dir: "/opt/opendlv.scaledcars/bin"
     #     environment:    
     #         - DISPLAY=$DISPLAY
@@ -64,4 +65,4 @@ services:
     #         - /tmp/.X11-unix:/tmp/.X11-unix 
     #     volumes:
     #         - .:/opt/scaledcars.data
-    #     command: "/opt/opendlv.scaledcars/bin/lanefollower -e DISPLAY=$DISPLAY --cid=111 --freq=20 --verbose=1"
+    #     command: "/opt/opendlv.scaledcars/bin/lanefollower --cid=111 --freq=20 --verbose=1"

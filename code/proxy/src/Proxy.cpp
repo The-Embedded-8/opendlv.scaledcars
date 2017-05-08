@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <chrono>
-#include <thread>
+
 #include <ctype.h>
 #include <cstring>
 #include <cmath>
@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
+
 #include <opendavinci/odcore/wrapper/SerialPort.h>
 #include <opendavinci/odcore/wrapper/SerialPortFactory.h>
 #include <time.h>
@@ -37,8 +38,6 @@
 #include "opendavinci/odcore/data/TimeStamp.h"
 #include <automotivedata/generated/automotive/miniature/SensorBoardData.h>
 
-#include "SerialReceiveBytes.hpp"
-
 #include "OpenCVCamera.h"
 
 #ifdef HAVE_UEYE
@@ -46,9 +45,6 @@
 #endif
 
 #include "Proxy.h"  
-
-// Global pointer
-automotive::miniature::SensorBoardData * pointer;
 
 using namespace odcore;
 using namespace odcore::wrapper;
@@ -138,20 +134,18 @@ namespace automotive {
 
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Proxy::body() {
-            // Fetch the config values from the superComponent
+
+            uint32_t captureCounter = 0;
+            unsigned char old=0;
+
             const string SERIAL_PORT= getKeyValueConfiguration().getValue<string>("proxy.Arduino.SerialPort");;
             const uint32_t BAUD_RATE = getKeyValueConfiguration().getValue<uint32_t>("proxy.Arduino.SerialSpeed");
 
             // Create the serial port
-            std::shared_ptr<SerialPort>
-            serial(SerialPortFactory::createSerialPort(SERIAL_PORT, BAUD_RATE));
-
-            SerialReceiveBytes handler;
-            serial->setStringListener(&handler);
-            // Start listening to the port
+            std::shared_ptr<SerialPort> serial(SerialPortFactory::createSerialPort(SERIAL_PORT, BAUD_RATE));
+            serial->setStringListener(this);
             serial->start();
-            uint32_t captureCounter = 0;
-            unsigned char old=0;
+
 
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // Capture frame.
@@ -174,73 +168,75 @@ namespace automotive {
                 unsigned char angle = (unsigned char)(steerAngle + 90);
 
                 // keep the angle in this range (60 - 120)
-                angle = (angle < 70 ? 60 : (angle > 120 ? 100 : angle));
+                angle = (angle < 70 ? 60 : (angle > 120 ? 110 : angle));
                 // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
                 angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
 
                 // create the string to send
                 std::string toSend(1, angle);
-
                 // Send an order to the arduino only if the previous order is not euqal
                 if((angle != old)) serial->send(toSend);
-
                 // update the old value
                 old = angle;
-
-                SensorBoardData SBD;
-                pointer = &SBD
-                // Share data.
-                getConference().send(((std::shared_ptr<Container>)(new Container(pointer))));
             }
 
             cout << "Proxy: Captured " << captureCounter << " frames." << endl;
 
             return odcore::data::dmcp::ModuleExitCodeMessage::OKAY; 
         }
-
+        void Proxy::nextString(const std::string &buffer)
+        {
+            cout << "ECHO: " << buffer << "\n";
+        }
     }
 } // automotive::miniature
+// // Read from the serial bus
+// void SerialReceiveBytes::nextString(const std::string &buffer)
+// { 
 
-// Read from the serial bus
-void SerialReceiveBytes::nextString(const std::string &buffer)
-{   
-    unsigned char byte;    
-    automotive::miniature::SensorBoardData SBD;   
-    // Decode bytes recieved from arduino here..
-    for(unsigned int i = 0; i < buffer.length(); i++)
-    {
-        SBD.setNumberOfSensors(4);
-        // A map to address the sensors with the corresponding values
-        std::map<uint32_t, double> sensordata;
-        // Read one byte at a time from the buffer
-        byte = buffer.at(i);
-        // if the 8th bit is set then it's the ultrasonic sensors
-        if(byte >> 7)
-        {
-            // Read the first 3 bits
-            unsigned char ultra1 = 7 & byte;
-            // Read the second 3 bits
-            unsigned char ultra2 = 7 & byte >> 3;
-            // Ultrasonic FRONT_CENTER (ultra1) at 0
-            sensordata[0] = (double) ultra1;
-            // Ultrasonic FRONT_RIGHT (ultra2) at 1
-            sensordata[1] = (double) ultra2;
-        }
-        else
-        {
-            unsigned char ir1 = 15 & byte;
-            unsigned char ir2 = 15 & byte >> 3;
-            // INFRARED_FRONT_RIGHT (ir1) is at 2
-            sensordata[2] = (double) ir1;
-            // INFRARED_REAR_RIGHT (ir2) is at 3
-            sensordata[3] = (double) ir2;
-        }
+//     // will wait here
+//     lock.lock();
+//     std::copy(buffer.begin() + (buffer.size() % 2), buffer.end(), sensor_data_buffer);
+//     sensor_data_buffer[buffer.size()] = '\0';
+//     lock.unlock();    
+//     // unsigned char byte;   
+//     // automotive::miniature::SensorBoardData SBD;
+//     // SBD.setNumberOfSensors(4);
+//     // // Ignore the extra packets
+//     // buffer = buffer.substr(0, (buffer.length() - buffer.length() % 2));
+//     // // A map to address the sensors with the corresponding values
+//     // std::map<uint32_t, double> sensordata;
 
-        SBD.setMapOfDistances(sensordata);
-        // Send the sensor board data
-        // pointer = &SBD;
-
-    }   
-
-    // std::cout << "Received " << s.length() << " bytes containing '" << (int) input << "'" << "\n";
-}
+//     // for(unsigned int i = 0; i < buffer.length(); i++)
+//     // {
+//     //     // Read one byte at a time from the buffer
+//     //     byte = buffer.at(i);
+//     //     // if the 8th bit is set then it's the ultrasonic sensors
+//         // if(byte >> 7)
+//         // {
+//         //     // Read the first 3 bits
+//         //     unsigned char ultra1 = 7 & byte;
+//         //     // Read the second 3 bits
+//         //     unsigned char ultra2 = 7 & byte >> 3;
+//         //     // Ultrasonic FRONT_CENTER (ultra1) at 0
+//         //     sensordata[0] = (double) ultra1;
+//         //     // Ultrasonic FRONT_RIGHT (ultra2) at 1
+//         //     sensordata[1] = (double) ultra2;
+//         // }
+//         // else
+//         // {
+//         //     unsigned char ir1 = 15 & byte;
+//         //     unsigned char ir2 = 15 & byte >> 3;
+//         //     // INFRARED_FRONT_RIGHT (ir1) is at 2
+//         //     sensordata[2] = (double) ir1;
+//         //     // INFRARED_REAR_RIGHT (ir2) is at 3
+//         //     sensordata[3] = (double) ir2;
+//         // }
+//     //     if(i % 2 == 0)
+//     //     {
+//     //         SBD.setMapOfDistances(sensordata);
+//     //         // re-init the map
+//     //         sensordata.clear();
+//     //     }
+//     // }
+// } password? : 517 can you bring all of my stuff when you finish and meet me at the track room? awesome 

@@ -75,6 +75,7 @@ namespace automotive {
                 odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode body();
 
             private:
+                
                 virtual void nextString(const std::string &buffer);
 
                 virtual void setUp();

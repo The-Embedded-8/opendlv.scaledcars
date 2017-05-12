@@ -87,6 +87,7 @@ namespace automotive {
 	            IplImage *m_image;
                 bool m_debug;
                 CvFont m_font;
+	
 
                 odcore::data::TimeStamp m_previousTime;
                 double m_eSum;

@@ -173,7 +173,7 @@ namespace automotive {
                 // keep the angle in this range (60 - 120)
                 angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
                 // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
-                angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
+                // angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
                 // create the string to send
                 std::string toSend(1, angle);
                 // Send an order to the arduino only if the previous order is not euqal
@@ -250,7 +250,7 @@ namespace automotive {
                     unsigned char UI1 = byte & 7;
                     // UltraSonic2, read the second 3 bits
                     unsigned char UI2 = (byte >> 3) & 7;
-                    cout << "proxy::ultra:: " << (int) UI1 << "\n";
+                    cout << "proxy::ultrasonic:: " << (int) UI1 << "\n";
                     map[ULTRASONIC_FRONT_RIGHT] = (double) UI1;
                     map[ULTRASONIC_FRONT_CENTER] = (double) UI2;
                 }

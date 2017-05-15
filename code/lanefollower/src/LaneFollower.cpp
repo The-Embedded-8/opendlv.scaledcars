@@ -107,7 +107,7 @@ namespace automotive {
 			        }
 
 			        // Mirror the image.
-			        cvFlip(m_image, 0, -1);
+			        // cvFlip(m_image, 0, -1);
 
 			        retVal = true;
 		        }
@@ -116,6 +116,12 @@ namespace automotive {
         }
 
         void LaneFollower::processImage() {
+            IplImage *gray = cvCreateImage(cvGetSize(m_image),IPL_DEPTH_8U,1);
+            cvCvtColor(m_image,gray,CV_BGR2GRAY);
+            cvSmooth(gray,gray, CV_BLUR, 3,3);
+            cvCanny(gray,gray, 50,200,3);
+            cvMerge(gray,gray,gray, NULL, m_image);
+
             static bool useRightLaneMarking = true;
             double e = 0;
 
@@ -220,14 +226,11 @@ namespace automotive {
             else {
                 m_eSum += e;
             }
-//            const double Kp = 2.5;
-//            const double Ki = 8.5;
-//            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
-            const double Kp = 0.4482626884328734;
-            const double Ki = 3.103197570937628;
-            const double Kd = 0.030450210485408566;
+            const double Kp = 1.3482626884328734;
+            const double Ki = 0.223197570937628;
+            const double Kd = 0.0;
 
             const double p = Kp * e;
             const double i = Ki * timeStep * m_eSum;
@@ -246,7 +249,7 @@ namespace automotive {
                     desiredSteering = -25.0;
                 }
             }
-            cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
+            // cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
 
 
             // Go forward.
@@ -390,6 +393,7 @@ namespace automotive {
                     // Measuring state machine.
                     if (stageMeasuring == FIND_OBJECT_INIT) {
                         distanceToObstacleOld = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
+                        cout << "DEBUG::ULTRASONIC:: " << distanceToObstacleOld;
                         stageMeasuring = FIND_OBJECT;
                     }
                     else if (stageMeasuring == FIND_OBJECT) {
@@ -460,5 +464,4 @@ namespace automotive {
         }
 
     }
-} // automotive::miniature
-
+} // automotive::miniatu

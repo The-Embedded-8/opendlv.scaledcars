@@ -22,16 +22,48 @@ version: '2'
 services:
     odsupercomponent:
         build: .
-        network_mode: "host"
+        network_mode: host
+        ipc: host
         volumes:
-        - .:/opt/scaledcars.data
-        command: "/opt/od4/bin/odsupercomponent --cid=211 --verbose=1 --configuration=/opt/scaledcars.data/configuration"
+             - ./DIT-168:/opt/configuration
+        command: "/opt/od4/bin/odsupercomponent --cid=111 --verbose=1 --configuration=/opt/configuration/configuration"
+
         
-    # scaledcars-control-example
-    scaledcars-control-example:
+    scaledcars-proxy:
         build: .
-        network_mode: "host"
+        network_mode: host
+        ipc: host
+        group_add:
+            - video
         depends_on:
             - odsupercomponent
-        command: "/opt/opendlv.scaledcars/bin/scaledcars-control-example --cid=211 --freq=10"
-
+        devices:
+            - "/dev/video0:/dev/video0"
+            - "/dev/ttyACM1:/dev/ttyACM0"
+        user: odv
+        network_mode: host
+        ipc: host
+        volumes:
+            - ./DIT-168:/opt/configuration
+            - /tmp/.X11-unix:/tmp/.X11-unix 
+            - ~/recordings:/opt/recordings 
+        environment:    
+            - DISPLAY=$DISPLAY  
+        command: "/opt/opendlv.scaledcars/bin/miniature/proxy --cid=111 --verbose=1  --privileged=true --device=/dev/ttyACM0 --device=/dev/video0:/dev/video0 --freq=20 --configuration=/opt/configuration/configuration --freq=20"
+    lanefollower:
+        build: .
+        depends_on:
+            - odsupercomponent
+            - scaledcars-proxy
+        network_mode: "host"
+        ipc: host
+        user: odv
+        working_dir: "/opt/opendlv.scaledcars/bin"
+        environment:    
+            - DISPLAY=$DISPLAY
+        volumes:
+            - ./DIT-168:/opt/configuration
+            - /tmp/.X11-unix:/tmp/.X11-unix 
+        volumes:
+            - .:/opt/scaledcars.data
+        command: "/opt/opendlv.scaledcars/bin/lanefollower --cid=111 --freq=10 --verbose=1"

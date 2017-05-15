@@ -54,7 +54,8 @@ namespace automotive {
 
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode SidewaysParker::body() {
-            const double ULTRASONIC_FRONT_RIGHT = 0;
+            const double ULTRASONIC_FRONT_RIGHT = 4;
+            const double INFRARED_REAR = 0;
             double distanceOld = 0;
             double absPathStart = 0;
             double absPathEnd = 0;
@@ -73,7 +74,8 @@ namespace automotive {
 
                 // Create vehicle control data.
                 VehicleControl vc;
-
+		
+	       // cout << "StageMachine" <<stageMoving << endl;
                 // Moving state machine.
                 if (stageMoving == 0) {
                     // Go forward.
@@ -98,18 +100,26 @@ namespace automotive {
                     vc.setSteeringWheelAngle(25);
                     stageMoving++;
                 }
-                if ((stageMoving >= 85) && (stageMoving < 220)) {
-                    // Backwards, steering wheel to the left.
+                if ((stageMoving >= 85) && (stageMoving < 220))  {
+                    // Backwards, steering wheel to the left. 
+		    cout << "Infrared" <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR) << endl;
                     vc.setSpeed(-.175);
                     vc.setSteeringWheelAngle(-25);
                     stageMoving++;
                 }
-                if (stageMoving >= 220) {
+                if (stageMoving >= 220 && (sbd.getValueForKey_MapOfDistances(INFRARED_REAR)<0)) {
+		    cout << "Infrared" <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR) << endl;
+                    vc.setSpeed(-.175);
+                    vc.setSteeringWheelAngle(0);
+                    stageMoving++;
+		    }
+	         if  (stageMoving >= 220 && (sbd.getValueForKey_MapOfDistances(INFRARED_REAR)>=0)){
                     // Stop.
+			cout << "Infrared stop" <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR) << endl;
                     vc.setSpeed(0);
                     vc.setSteeringWheelAngle(0);
-                }
-
+			}
+		
                 // Measuring state machine.
                 switch (stageMeasuring) {
                     case 0:
@@ -150,7 +160,13 @@ namespace automotive {
                         }
                     break;
                 }
+                cout << "ultraRight: " <<sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT)<<endl;
+                if(sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) >2 && sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) <4){
 
+                	vc.setSpeed(2);
+
+                	vc.setSteeringWheelAngle(60);
+                }
                 // Create container for finally sending the data.
                 Container c(vc);
                 // Send container.

@@ -27,6 +27,8 @@
 #include "opendavinci/odcore/data/Container.h"
 #include "opendavinci/odtools/recorder/Recorder.h"
 
+#include <opendavinci/odcore/io/StringListener.h>
+
 #include "Camera.h"
 
 namespace automotive {
@@ -37,7 +39,8 @@ namespace automotive {
         /**
          * This class wraps the software/hardware interface board.
          */
-        class Proxy : public odcore::base::module::TimeTriggeredConferenceClientModule {
+        class Proxy : public odcore::base::module::TimeTriggeredConferenceClientModule,  public odcore::io::StringListener{
+            
             private:
                 /**
                  * "Forbidden" copy constructor. Goal: The compiler should warn
@@ -72,6 +75,9 @@ namespace automotive {
                 odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode body();
 
             private:
+                
+                virtual void nextString(const std::string &buffer);
+
                 virtual void setUp();
 
                 virtual void tearDown();
@@ -81,6 +87,7 @@ namespace automotive {
             private:
                 unique_ptr<odtools::recorder::Recorder> m_recorder;
                 unique_ptr<Camera> m_camera;
+
         };
 
     }

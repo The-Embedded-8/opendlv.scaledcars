@@ -245,28 +245,25 @@ namespace automotive {
                     distribute(container);
                 }
 
-                byte = buffer.at(i);
-                // Read on byte from the buffer
-
-        //        int intByte = std::stoi(buffer);//buffer.at(i);
-        //        byte = (unsigned char)intByte;
-                // Switch the flag
-                // UltraSonic reads
-
+				// Read on byte from the buffer
+                byte = buffer.at(i);		
+		
+                // USFront: 00 100 000 - 0 = 16...5 = 21, 7 = 23
                 if((byte >> 3) == 2) {
+                	// US1, read the first 3 bits
                 	unsigned char UI2 = byte & 7;
                     cout << "proxy::ultraFront:: " << (int) UI2 << "\n";
                     map[ULTRASONIC_FRONT_CENTER] = (double) UI2;
                 }
 
+                // USSide: 00 011 000
                 if((byte >> 3) == 3){
-
-                    // UltraSonic1, read the first 3 bits
                     unsigned char UI1 = byte & 7;
                     cout << "proxy::ultraSide:: " << (int) UI1 << "\n";
                     map[ULTRASONIC_FRONT_RIGHT] = (double) UI1;
                 }
 
+                // IRFrontSide: 00 100 000
                 if((byte >> 3) == 4)
                 {
                 	unsigned char IR2 = byte & 7;
@@ -274,12 +271,15 @@ namespace automotive {
                 	map[INFRARED_FRONT_RIGHT] = IR2;
                 }
 
+                // IRBackSide: 00 101 000
                 if((byte >> 3) == 5)
                 {
                 	unsigned char IR1 = byte & 7;
                 	cout << "proxy::irSensorSideFront:: " << (int) IR1 << "\n";
                 	map[INFRARED_REAR_RIGHT] = IR1;
                 }
+
+                // IRBack: 00 110 000
                 if((byte >> 3) == 6)
                 {
                 	unsigned char IR3 = byte & 7;
@@ -287,6 +287,7 @@ namespace automotive {
                 	map[INFRARED_REAR_LEFT] = IR3;
                 }
 
+                // // Odometer: 01 000 000
                 // // Odometer read TODO
                 // if((byte >> 6) == 3)
                 //{}

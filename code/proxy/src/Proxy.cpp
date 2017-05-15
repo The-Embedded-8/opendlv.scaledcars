@@ -56,6 +56,8 @@ using namespace odtools::recorder;
 
 namespace automotive {
     namespace miniature {
+        // Map to map the sensor reads with the sensor
+        static map<uint32_t, double> map;
 
         Proxy::Proxy(const int32_t &argc, char **argv) :
             TimeTriggeredConferenceClientModule(argc, argv, "proxy"),
@@ -180,7 +182,6 @@ namespace automotive {
                 // create the string to send
                 std::string toSend(1, angle);
 
-                std::cout << "fromParker " << (int)angle<< std::endl;
                 // Send an order to the arduino only if the previous order is not euqal
                 if((angle != old)) serial->send(toSend);
 
@@ -215,9 +216,6 @@ namespace automotive {
             // Number of sensors in the object
             SBD.setNumberOfSensors(5);
 
-            // Map to map the sensor reads with the sensor
-            map<uint32_t, double> map;
-
             // ID's for the sensors in the map (must be the same in the overtaking)
             const int32_t ULTRASONIC_FRONT_CENTER = 3;
             const int32_t ULTRASONIC_FRONT_RIGHT = 4;
@@ -227,6 +225,7 @@ namespace automotive {
 
             for(uint32_t i=0; i < buffer.size(); i++)
             {
+                for (uint32_t y=0; y< 5; y++) { cout << "there:: "<< y << ":: " << map.count(y) << '\n';}
                 //Check if the map contains the reads for all the sensors
                 if (map.count(ULTRASONIC_FRONT_CENTER) &&
                     map.count(ULTRASONIC_FRONT_RIGHT) &&
@@ -236,13 +235,19 @@ namespace automotive {
                 {
                     // Fill the SBD with the reads
                     SBD.setMapOfDistances(map);
-                    // Clear the map for new reads
-                    map.clear();
-
                     //Create a container out of the SBD
                     Container container(SBD);
                     //Distribute the container
                     distribute(container);
+
+                    cout << "proxy::ultraFront:: " << (int) map[ULTRASONIC_FRONT_RIGHT] << "\n";
+                    cout << "proxy::ultraSide:: " << (int) map[ULTRASONIC_FRONT_RIGHT] << "\n";
+                    cout << "proxy::irSideFront:: " << (int) map[INFRARED_FRONT_RIGHT] << "\n";
+                    cout << "proxy::irSideBack:: " << (int) map[INFRARED_REAR_RIGHT] << "\n";
+                    cout << "proxy::irBack:: " << (int) map[INFRARED_REAR_LEFT] << "\n";
+
+                    // Clear the map for new reads
+                    map.clear();
                 }
 
 				// Read on byte from the buffer
@@ -252,14 +257,13 @@ namespace automotive {
                 if((byte >> 3) == 2) {
                 	// US1, read the first 3 bits
                 	unsigned char UI2 = byte & 7;
-                    cout << "proxy::ultraFront:: " << (int) UI2 << "\n";
                     map[ULTRASONIC_FRONT_CENTER] = (double) UI2;
+                    cout << "UI:: " << (int) UI2 << '\n';
                 }
 
                 // USSide: 00 011 000
                 if((byte >> 3) == 3){
                     unsigned char UI1 = byte & 7;
-                    cout << "proxy::ultraSide:: " << (int) UI1 << "\n";
                     map[ULTRASONIC_FRONT_RIGHT] = (double) UI1;
                 }
 
@@ -267,15 +271,14 @@ namespace automotive {
                 if((byte >> 3) == 4)
                 {
                 	unsigned char IR2 = byte & 7;
-                	cout << "proxy::irSensorSideFront:: " << (int) IR2 << "\n";
                 	map[INFRARED_FRONT_RIGHT] = IR2;
+                    cout << "IR: " << (int) IR2 << '\n';
                 }
 
                 // IRBackSide: 00 101 000
                 if((byte >> 3) == 5)
                 {
                 	unsigned char IR1 = byte & 7;
-                	cout << "proxy::irSensorSideFront:: " << (int) IR1 << "\n";
                 	map[INFRARED_REAR_RIGHT] = IR1;
                 }
 
@@ -283,7 +286,6 @@ namespace automotive {
                 if((byte >> 3) == 6)
                 {
                 	unsigned char IR3 = byte & 7;
-                	cout << "proxy::irSensorBack:: " << (int) IR3 << "\n";
                 	map[INFRARED_REAR_LEFT] = IR3;
                 }
 

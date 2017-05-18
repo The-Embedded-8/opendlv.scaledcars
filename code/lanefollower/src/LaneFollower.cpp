@@ -36,17 +36,14 @@
 namespace automotive {
     namespace miniature {
 
-        double desiredSteering = 0;
-
-        double IR_PARALLEL = 0;
-
-
         using namespace std;
         using namespace odcore::base;
         using namespace odcore::data;
         using namespace odcore::data::image;
         using namespace automotive;
         using namespace automotive::miniature;
+
+          double desiredSteering = 0;
 
         LaneFollower::LaneFollower(const int32_t &argc, char **argv) : TimeTriggeredConferenceClientModule(argc, argv, "lanefollower"),
             m_hasAttachedToSharedImageMemory(false),
@@ -62,62 +59,62 @@ namespace automotive {
         LaneFollower::~LaneFollower() {}
 
         void LaneFollower::setUp() {
-            // This method will be call automatically _before_ running body().
-            if (m_debug) {
-                // Create an OpenCV-window.
-                cvNamedWindow("WindowShowImage", CV_WINDOW_AUTOSIZE);
-                cvMoveWindow("WindowShowImage", 300, 100);
-            }
+	        // This method will be call automatically _before_ running body().
+	        if (m_debug) {
+		        // Create an OpenCV-window.
+		        cvNamedWindow("WindowShowImage", CV_WINDOW_AUTOSIZE);
+		        cvMoveWindow("WindowShowImage", 300, 100);
+	        }
         }
 
         void LaneFollower::tearDown() {
-            // This method will be call automatically _after_ return from body().
-            if (m_image != NULL) {
-                cvReleaseImage(&m_image);
-            }
+	        // This method will be call automatically _after_ return from body().
+	        if (m_image != NULL) {
+		        cvReleaseImage(&m_image);
+	        }
 
-            if (m_debug) {
-                cvDestroyWindow("WindowShowImage");
-            }
+	        if (m_debug) {
+		        cvDestroyWindow("WindowShowImage");
+	        }
         }
 
         bool LaneFollower::readSharedImage(Container &c) {
-            bool retVal = false;
+	        bool retVal = false;
 
-            if (c.getDataType() == odcore::data::image::SharedImage::ID()) {
-                SharedImage si = c.getData<SharedImage> ();
+	        if (c.getDataType() == odcore::data::image::SharedImage::ID()) {
+		        SharedImage si = c.getData<SharedImage> ();
 
-                // Check if we have already attached to the shared memory.
-                if (!m_hasAttachedToSharedImageMemory) {
-                    m_sharedImageMemory
-                            = odcore::wrapper::SharedMemoryFactory::attachToSharedMemory(
-                                    si.getName());
-                }
+		        // Check if we have already attached to the shared memory.
+		        if (!m_hasAttachedToSharedImageMemory) {
+			        m_sharedImageMemory
+					        = odcore::wrapper::SharedMemoryFactory::attachToSharedMemory(
+							        si.getName());
+		        }
 
-                // Check if we could successfully attach to the shared memory.
-                if (m_sharedImageMemory->isValid()) {
-                    // Lock the memory region to gain exclusive access using a scoped lock.
+		        // Check if we could successfully attach to the shared memory.
+		        if (m_sharedImageMemory->isValid()) {
+			        // Lock the memory region to gain exclusive access using a scoped lock.
                     Lock l(m_sharedImageMemory);
-                    const uint32_t numberOfChannels = 3;
-                    // For example, simply show the image.
-                    if (m_image == NULL) {
-                        m_image = cvCreateImage(cvSize(si.getWidth(), si.getHeight()), IPL_DEPTH_8U, numberOfChannels);
-                    }
+			        const uint32_t numberOfChannels = 3;
+			        // For example, simply show the image.
+			        if (m_image == NULL) {
+				        m_image = cvCreateImage(cvSize(si.getWidth(), si.getHeight()), IPL_DEPTH_8U, numberOfChannels);
+			        }
 
-                    // Copying the image data is very expensive...
-                    if (m_image != NULL) {
-                        memcpy(m_image->imageData,
-                               m_sharedImageMemory->getSharedMemory(),
-                               si.getWidth() * si.getHeight() * numberOfChannels);
-                    }
+			        // Copying the image data is very expensive...
+			        if (m_image != NULL) {
+				        memcpy(m_image->imageData,
+						       m_sharedImageMemory->getSharedMemory(),
+						       si.getWidth() * si.getHeight() * numberOfChannels);
+			        }
 
-                    // Mirror the image.
-                    cvFlip(m_image, 0, -1);
+			        // Mirror the image.
+			        cvFlip(m_image, 0, -1);
 
-                    retVal = true;
-                }
-            }
-            return retVal;
+			        retVal = true;
+		        }
+	        }
+	        return retVal;
         }
 
         void LaneFollower::processImage() {
@@ -141,8 +138,8 @@ namespace automotive {
                 left.y = y;
                 left.x = -1;
                 for(int x = m_image->width/2; x > 0; x--) {
-                    pixelLeft = cvGet2D(m_image, y, x);
-                    if (pixelLeft.val[0] >= 200) {
+		            pixelLeft = cvGet2D(m_image, y, x);
+		            if (pixelLeft.val[0] >= 200) {
                         left.x = x;
                         break;
                     }
@@ -154,8 +151,8 @@ namespace automotive {
                 right.y = y;
                 right.x = -1;
                 for(int x = m_image->width/2; x < m_image->width; x++) {
-                    pixelRight = cvGet2D(m_image, y, x);
-                    if (pixelRight.val[0] >= 200) {
+		            pixelRight = cvGet2D(m_image, y, x);
+		            if (pixelRight.val[0] >= 200) {
                         right.x = x;
                         break;
                     }
@@ -163,20 +160,20 @@ namespace automotive {
 
                 if (m_debug) {
                     if (left.x > 0) {
-                        CvScalar green = CV_RGB(0, 255, 0);
-                        cvLine(m_image, cvPoint(m_image->width/2, y), left, green, 1, 8);
+                    	CvScalar green = CV_RGB(0, 255, 0);
+                    	cvLine(m_image, cvPoint(m_image->width/2, y), left, green, 1, 8);
 
                         stringstream sstr;
                         sstr << (m_image->width/2 - left.x);
-                        cvPutText(m_image, sstr.str().c_str(), cvPoint(m_image->width/2 - 100, y - 2), &m_font, green);
+                    	cvPutText(m_image, sstr.str().c_str(), cvPoint(m_image->width/2 - 100, y - 2), &m_font, green);
                     }
                     if (right.x > 0) {
-                        CvScalar red = CV_RGB(255, 0, 0);
-                        cvLine(m_image, cvPoint(m_image->width/2, y), right, red, 1, 8);
+                    	CvScalar red = CV_RGB(255, 0, 0);
+                    	cvLine(m_image, cvPoint(m_image->width/2, y), right, red, 1, 8);
 
                         stringstream sstr;
                         sstr << (right.x - m_image->width/2);
-                        cvPutText(m_image, sstr.str().c_str(), cvPoint(m_image->width/2 + 100, y - 2), &m_font, red);
+                    	cvPutText(m_image, sstr.str().c_str(), cvPoint(m_image->width/2 + 100, y - 2), &m_font, red);
                     }
                 }
 
@@ -211,7 +208,7 @@ namespace automotive {
             }
 
             TimeStamp afterImageProcessing;
-            //cerr << "Processing time: " << (afterImageProcessing.toMicroseconds() - beforeImageProcessing.toMicroseconds())/1000.0 << "ms." << endl;
+            cerr << "Processing time: " << (afterImageProcessing.toMicroseconds() - beforeImageProcessing.toMicroseconds())/1000.0 << "ms." << endl;
 
             // Show resulting features.
             if (m_debug) {
@@ -231,11 +228,14 @@ namespace automotive {
             else {
                 m_eSum += e;
             }
+//            const double Kp = 2.5;
+//            const double Ki = 8.5;
+//            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
-            const double Kp = 1.3482626884328734;
-            const double Ki = 0.223197570937628;
-            const double Kd = 0.0;
+            const double Kp = 0.4482626884328734;
+            const double Ki = 3.103197570937628;
+                const double Kd = 0.030450210485408566;
 
             const double p = Kp * e;
             const double i = Ki * timeStep * m_eSum;
@@ -243,7 +243,7 @@ namespace automotive {
             m_eOld = e;
 
             const double y = p + i + d;
-            
+          
             if (fabs(e) > 1e-2) {
                 desiredSteering = y;
 
@@ -254,20 +254,20 @@ namespace automotive {
                     desiredSteering = -25.0;
                 }
             }
-            // cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
+            cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
 
 
             // Go forward.
-            m_vehicleControl.setSpeed(0.5);
+            m_vehicleControl.setSpeed(1);
             m_vehicleControl.setSteeringWheelAngle(desiredSteering);
         }
 
         // This method will do the main data processing job.
         // Therefore, it tries to open the real camera first. If that fails, the virtual camera images from camgen are used.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
-            // Get configuration data.
-            KeyValueConfiguration kv = getKeyValueConfiguration();
-            m_debug = kv.getValue<int32_t> ("lanefollower.debug") == 1;
+	        // Get configuration data.
+	        KeyValueConfiguration kv = getKeyValueConfiguration();
+	        m_debug = kv.getValue<int32_t> ("lanefollower.debug") == 1;
 
             // Initialize fonts.
             const double hscale = 0.4;
@@ -284,132 +284,148 @@ namespace automotive {
             const int32_t INFRARED_FRONT_RIGHT = 0;
             const int32_t INFRARED_REAR_RIGHT = 2;
 
-            const double OVERTAKING_DISTANCE = 5.2;
-            //const double HEADING_PARALLEL = 0.04;
-            
+            const double OVERTAKING_DISTANCE = 5.5;
+            const double HEADING_PARALLEL = 0.04;
 
             // Overall state machines for moving and measuring.
-            enum StateMachineMoving { FORWARD, TO_LEFT_LANE_LEFT_TURN, TO_LEFT_LANE_RIGHT_TURN, CONTINUE_ON_LEFT_LANE, TO_RIGHT_LANE_RIGHT_TURN, TO_RIGHT_LANE_LEFT_TURN };
-            enum StateMachineMeasuring { DISABLE, FIND_OBJECT_INIT, FIND_OBJECT, FIND_OBJECT_PLAUSIBLE, HAVE_BOTH_IR ,HAVE_FRONT_IR, END_OF_OBJECT };
+            enum StateMachineMoving {
+             FORWARD, TO_LEFT_LANE_LEFT_TURN, TO_LEFT_LANE_RIGHT_TURN,
+             CONTINUE_ON_LEFT_LANE, TO_RIGHT_LANE_RIGHT_TURN, TO_RIGHT_LANE_LEFT_TURN };
+
+            enum StateMachineMeasuring {
+             DISABLE, FIND_OBJECT_INIT, FIND_OBJECT,
+             FIND_OBJECT_PLAUSIBLE, HAVE_BOTH_IR, HAVE_BOTH_IR_SAME_DISTANCE,
+             END_OF_OBJECT };
 
             StateMachineMoving stageMoving = FORWARD;
             StateMachineMeasuring stageMeasuring = FIND_OBJECT_INIT;
 
             // State counter for dynamically moving back to right lane.
-            
+            // int32_t stageToRightLaneRightTurn = 0;
+            // int32_t stageToRightLaneLeftTurn = 0;
 
             // Distance variables to ensure we are overtaking only stationary or slowly driving obstacles.
             double distanceToObstacle = 0;
             double distanceToObstacleOld = 0;
 
+
+            double travelLeft;
+            double travelRight;
+
             // Overall state machine handler.
-            while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
-                bool has_next_frame = false;
+	        while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
+		        bool has_next_frame = false;
 
-                // Get the most recent available container for a SharedImage.
-                Container c = getKeyValueDataStore().get(odcore::data::image::SharedImage::ID());
+		        // Get the most recent available container for a SharedImage.
+		        Container c = getKeyValueDataStore().get(odcore::data::image::SharedImage::ID());
 
-                if (c.getDataType() == odcore::data::image::SharedImage::ID()) {
-                    // Example for processing the received container.
-                    has_next_frame = readSharedImage(c);
-                }
+		        if (c.getDataType() == odcore::data::image::SharedImage::ID()) {
+			        // Example for processing the received container.
+			        has_next_frame = readSharedImage(c);
+		        }
 
-                // Process the read image and calculate regular lane following set values for control algorithm.
-                if (true == has_next_frame) {
-                    processImage();
-                }
+		        // Process the read image and calculate regular lane following set values for control algorithm.
+		        if (true == has_next_frame) {
+			        processImage();
+		        }
 
 
                 // Overtaking part.
                 {
-                    // 1. Get most recent vehicle data:
-                    Container containerVehicleData = getKeyValueDataStore().get(automotive::VehicleData::ID());
-                    VehicleData vd = containerVehicleData.getData<VehicleData> ();
+	                // 1. Get most recent vehicle data:
+	                Container containerVehicleData = getKeyValueDataStore().get(automotive::VehicleData::ID());
+	                VehicleData vd = containerVehicleData.getData<VehicleData> ();
 
-                    // 2. Get most recent sensor board data:
-                    Container containerSensorBoardData = getKeyValueDataStore().get(automotive::miniature::SensorBoardData::ID());
-                    SensorBoardData sbd = containerSensorBoardData.getData<SensorBoardData> ();
+	                // 2. Get most recent sensor board data:
+	                Container containerSensorBoardData = getKeyValueDataStore().get(automotive::miniature::SensorBoardData::ID());
+	                SensorBoardData sbd = containerSensorBoardData.getData<SensorBoardData> ();
 
                     // Moving state machine.
                     if (stageMoving == FORWARD) {
-                        cerr << "FORWARD" << endl;
-                        m_vehicleControl.setSteeringWheelAngle(desiredSteering);
                         // Use m_vehicleControl data from image processing.
 
+                        // stageToRightLaneLeftTurn = 15;
+                        // stageToRightLaneRightTurn = 0;
                     }
                     else if (stageMoving == TO_LEFT_LANE_LEFT_TURN) {
-                        cerr << "TO_LEFT_LANE_LEFT_TURN" << endl;
                         // Move to the left lane: Turn left part until both IRs see something.
-                        m_vehicleControl.setSpeed(0.5);
+                        m_vehicleControl.setSpeed(1);
                         m_vehicleControl.setSteeringWheelAngle(-25);
+                        travelLeft += vd.getRelTraveledPath();
+                        cout <<travelLeft << endl;
+
+                 
 
                         // State machine measuring: Both IRs need to see something before leaving this moving state.
-                        stageMeasuring = HAVE_FRONT_IR;
+                        stageMeasuring = HAVE_BOTH_IR;
 
+                        // stageToRightLaneRightTurn++;
+
+                        cout << "TO_LEFT_LANE_LEFT_TURN" << endl;
                     }
                     else if (stageMoving == TO_LEFT_LANE_RIGHT_TURN) {
-                        cerr << "TO_LEFT_LANE_RIGHT_TURN" << endl;
-                        
-                        if(sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) > 0) {
-                            cout << "GOT THE VALUE!" << endl;
-                            IR_PARALLEL = sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT);
-                            stageMeasuring = HAVE_BOTH_IR;
 
-                        }
+                    	travelLeft += vd.getRelTraveledPath();
+                    	m_vehicleControl.setSteeringWheelAngle(desiredSteering);
+                    	                       
                         // Move to the left lane: Turn right part until both IRs have the same distance to obstacle.
-                       m_vehicleControl.setSteeringWheelAngle(desiredSteering);
+                      //  m_vehicleControl.setSpeed(1);
+                      //  m_vehicleControl.setSteeringWheelAngle(25);
 
                         // State machine measuring: Both IRs need to have the same distance before leaving this moving state.
+                        stageMeasuring = HAVE_BOTH_IR_SAME_DISTANCE;
 
-                        
+                        // stageToRightLaneLeftTurn++;
+
+                        cout << "TO_LEFT_LANE_RIGHT_TURN" << endl;
                     }
                     else if (stageMoving == CONTINUE_ON_LEFT_LANE) {
-                        cerr << "CONTINUE_ON_LEFT_LANE" << endl;
-
-                       
-                                               
-
+                    	cerr << "CONTINUE_ON_LEFT_LANE" << endl;
+                    	cerr << "CONTINUE_ON_LEFT_LANE" << endl;
                         // Move to the left lane: Passing stage.
 
                         // Use m_vehicleControl data from image processing.
+
 
                         // Find end of object.
                         stageMeasuring = END_OF_OBJECT;
                     }
                     else if (stageMoving == TO_RIGHT_LANE_RIGHT_TURN) {
-                        cerr << "TO_RIGHT_LANE_RIGHT_TURN" << endl;
+                    	cerr << "TRAVELLEFT" << travelLeft << endl;
+                    	travelRight += vd.getRelTraveledPath();
+                    	cout << travelRight << endl;
+                    	cerr << "TO_RIGHT_LANE_RIGHT_TURN" << endl;
+                    	cerr << "TO_RIGHT_LANE_RIGHT_TURN" << endl;
                         // Move to the right lane: Turn right part.
-                        m_vehicleControl.setSpeed(0.5);
+                        m_vehicleControl.setSpeed(1);
                         m_vehicleControl.setSteeringWheelAngle(25);
 
-                        cout << "IR_PARALLEL: " << IR_PARALLEL << endl;
-                        cout << "IR RR" << sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) << endl;
-                        if(sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) > (IR_PARALLEL - 0.2)) {
+                        // stageToRightLaneRightTurn--;
+                        if ((travelLeft - travelRight) < 0) {
                             stageMoving = TO_RIGHT_LANE_LEFT_TURN;
-                        }
 
-                      
+                        }
+                        cout << "TO_RIGHT_LANE_RIGHT_TURN" << endl;
                     }
                     else if (stageMoving == TO_RIGHT_LANE_LEFT_TURN) {
-                        cerr << "TO_RIGHT_LANE_LEFT_TURN" << endl;
                         // Move to the left lane: Turn left part.
-                        m_vehicleControl.setSpeed(0.5);
-                        m_vehicleControl.setSteeringWheelAngle(desiredSteering);
+                       m_vehicleControl.setSpeed(1);
+                       m_vehicleControl.setSteeringWheelAngle(desiredSteering);
 
-                       
+                        cout << "TO_RIGHT_LANE_LEFT_TURN" << endl;
 
-
-                       // const double US_FR = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
-                        if (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER) < 5.5) {
-                            cerr << "RESET" << endl;
+                        // stageToRightLaneLeftTurn--;
+                        if (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER) < 5.7) {
                             // Start over.
+                            cerr << "RESET" << desiredSteering << endl;
                             stageMoving = FORWARD;
                             stageMeasuring = FIND_OBJECT_INIT;
 
                             distanceToObstacle = 0;
                             distanceToObstacleOld = 0;
 
-                            IR_PARALLEL = 0;
+                         //    stageToRightLaneLeftTurn = 15;
+                        	// stageToRightLaneRightTurn = 0;
 
                             // Reset PID controller.
                             m_eSum = 0;
@@ -419,14 +435,20 @@ namespace automotive {
 
                     // Measuring state machine.
                     if (stageMeasuring == FIND_OBJECT_INIT) {
+                    	cerr << "FIND_OBJECT_INIT" << endl;
+                    	                    	cerr << "FIND_OBJECT_INIT" << endl;
+
                         distanceToObstacleOld = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
                         stageMeasuring = FIND_OBJECT;
                     }
                     else if (stageMeasuring == FIND_OBJECT) {
+                    	cerr << "FIND_OBJECT" << endl;
+                    	                    	cerr << "FIND_OBJECT" << endl;
+
                         distanceToObstacle = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
 
                         // Approaching an obstacle (stationary or driving slower than us).
-                        if (  (distanceToObstacle > 0) && (((distanceToObstacleOld - distanceToObstacle) > 0) || (fabs(distanceToObstacleOld - distanceToObstacle) < 1e-2)) ) {
+                        if ((distanceToObstacle > 0) && (((distanceToObstacleOld - distanceToObstacle) > 0) || (fabs(distanceToObstacleOld - distanceToObstacle) < 1e-2)) ) {
                             // Check if overtaking shall be started.                        
                             stageMeasuring = FIND_OBJECT_PLAUSIBLE;
                         }
@@ -434,8 +456,12 @@ namespace automotive {
                         distanceToObstacleOld = distanceToObstacle;
                     }
                     else if (stageMeasuring == FIND_OBJECT_PLAUSIBLE) {
+                    	cerr << "FIND_OBJECT_PLAUSIBLE" << endl;
+
+                    	cerr << "FIND_OBJECT_PLAUSIBLE" << endl;
                         if (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER) < OVERTAKING_DISTANCE) {
                             stageMoving = TO_LEFT_LANE_LEFT_TURN;
+                      
 
                             // Disable measuring until requested from moving state machine again.
                             stageMeasuring = DISABLE;
@@ -445,22 +471,28 @@ namespace automotive {
                         }
                     }
                     else if (stageMeasuring == HAVE_BOTH_IR) {
+                    	cerr << "HAVE_BOTH_IR" << endl;
                         // Remain in this stage until both IRs see something.
                         if ( (sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) > 0) && (sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) > 0) ) {
-
-                            stageMoving = CONTINUE_ON_LEFT_LANE;
-
+                            // Turn to right.
+                            stageMoving = TO_LEFT_LANE_RIGHT_TURN;
                         }
                     }
-                    else if (stageMeasuring == HAVE_FRONT_IR) {
+                    else if (stageMeasuring == HAVE_BOTH_IR_SAME_DISTANCE) {
+                    	cerr << "HAVE_BOTH_IR_SAME_DISTANCE" << endl;
+                    	                    	cerr << "HAVE_BOTH_IR_SAME_DISTANCE" << endl;
+
                         // Remain in this stage until both IRs have the similar distance to obstacle (i.e. turn car)
                         // and the driven parts of the turn are plausible.
                         const double IR_FR = sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT);
-                       
+                        const double IR_RR = sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT);
 
-                        if (IR_FR > 0) {
+                        if ((fabs(IR_FR - IR_RR) < HEADING_PARALLEL)) {
+                        	cerr << "CONTINUE_ON_LEFT_LANE" << endl;
+                        	                        	cerr << "CONTINUE_ON_LEFT_LANE" << endl;
+
                             // Straight forward again.
-                            stageMoving = TO_LEFT_LANE_RIGHT_TURN;
+                            stageMoving = CONTINUE_ON_LEFT_LANE;
 
                             // Reset PID controller.
                             m_eSum = 0;
@@ -468,12 +500,13 @@ namespace automotive {
                         }
                     }
                     else if (stageMeasuring == END_OF_OBJECT) {
-
-                        
                         // Find end of object.
+                        cerr << "END_OF_OBJECT" << endl;
+
+                        cerr << "END_OF_OBJECT" << endl;
                         distanceToObstacle = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT);
 
-                        if (distanceToObstacle < 0 && sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) < 0) {
+                        if (distanceToObstacle < 0) {
                             // Move to right lane again.
                             stageMoving = TO_RIGHT_LANE_RIGHT_TURN;
 
@@ -487,11 +520,11 @@ namespace automotive {
                 Container c2(m_vehicleControl);
                 // Send container.
                 getConference().send(c2);
-            }
+	        }
 
-            return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;
+	        return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;
         }
 
     }
-} 
+} // automotive::miniature
 

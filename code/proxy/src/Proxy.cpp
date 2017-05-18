@@ -37,6 +37,7 @@
 #include "automotivedata/generated/automotive/VehicleControl.h"
 #include "opendavinci/odcore/data/TimeStamp.h"
 #include <automotivedata/generated/automotive/miniature/SensorBoardData.h>
+#include <bitset>
 
 #include "OpenCVCamera.h"
 
@@ -55,6 +56,9 @@ using namespace odtools::recorder;
 
 namespace automotive {
     namespace miniature {
+
+        // Map to map the sensor reads with the sensor
+        static map<uint32_t, double> map;
 
         Proxy::Proxy(const int32_t &argc, char **argv) :
             TimeTriggeredConferenceClientModule(argc, argv, "proxy"),
@@ -201,17 +205,13 @@ namespace automotive {
         */
 
         void Proxy::nextString(const std::string &buffer)
-        {
+        {   
             // A byte to read at a time
-            unsigned char byte;
-
+            unsigned char byte; 
             // SensorBoardData  object to collect the sensor reads
             SensorBoardData SBD;
             // Number of sensors in the object
-            SBD.setNumberOfSensors(5);
-
-            // Map to map the sensor reads with the sensor
-            map<uint32_t, double> map;
+            SBD.setNumberOfSensors(6);
 
             // ID's for the sensors in the map (must be the same in the overtaking)
             const int32_t ULTRASONIC_FRONT_CENTER = 3;
@@ -219,6 +219,7 @@ namespace automotive {
             const int32_t INFRARED_FRONT_RIGHT = 0;
             const int32_t INFRARED_REAR_RIGHT = 2;
             const int32_t INFRARED_REAR_LEFT = 1;
+            const int32_t ODOMETER = 5;
 
             for(uint32_t i=0; i < buffer.size(); i++)
             {
@@ -227,10 +228,19 @@ namespace automotive {
                     map.count(ULTRASONIC_FRONT_RIGHT) &&
                     map.count(INFRARED_FRONT_RIGHT) &&
                     map.count(INFRARED_REAR_RIGHT) &&
-                    map.count(INFRARED_REAR_LEFT))
+                    map.count(INFRARED_REAR_LEFT) && 
+                    map.count(ODOMETER))
                 {
                     // Fill the SBD with the reads
                     SBD.setMapOfDistances(map);
+
+                    uint32_t x = 0;
+                    while(x < 6) 
+                        {
+                            cout << map[x] << ", ";
+                            x++;
+                        }
+                    cout << '\n';
                     // Clear the map for new reads
                     map.clear();
 
@@ -250,7 +260,7 @@ namespace automotive {
                     unsigned char UI1 = byte & 7;
                     // UltraSonic2, read the second 3 bits
                     unsigned char UI2 = (byte >> 3) & 7;
-                    cout << "proxy::ultrasonic:: " << (int) UI1 << "\n";
+
                     map[ULTRASONIC_FRONT_RIGHT] = (double) UI1;
                     map[ULTRASONIC_FRONT_CENTER] = (double) UI2;
                 }
@@ -269,7 +279,9 @@ namespace automotive {
                 {
                     // Read the first 3 bits
                     unsigned char IR3 = byte & 7;
+                    unsigned char Odometer = (byte >> 3) & 7;
                     map[INFRARED_REAR_LEFT] = IR3;
+                    map[ODOMETER] = Odometer;
                 }
                 // // Odometer read TODO
                 // if((byte >> 6) == 3)

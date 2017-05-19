@@ -279,14 +279,10 @@ namespace automotive {
                 {
                     // Read the first 3 bits
                     unsigned char IR3 = byte & 7;
-                    unsigned char Odometer = (byte >> 3) & 7;
+                    unsigned char Odometer = (byte >> 3) & 1;
                     map[INFRARED_REAR_LEFT] = IR3;
                     map[ODOMETER] = Odometer;
                 }
-                // // Odometer read TODO
-                // if((byte >> 6) == 3)
-                //{}
-                // break;
             }
         }
     }

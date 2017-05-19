@@ -37,7 +37,7 @@
 #include "automotivedata/generated/automotive/VehicleControl.h"
 #include "opendavinci/odcore/data/TimeStamp.h"
 #include <automotivedata/generated/automotive/miniature/SensorBoardData.h>
-
+#include <bitset>
 
 #include "OpenCVCamera.h"
 
@@ -56,6 +56,7 @@ using namespace odtools::recorder;
 
 namespace automotive {
     namespace miniature {
+
         // Map to map the sensor reads with the sensor
         static map<uint32_t, double> map;
 
@@ -164,8 +165,6 @@ namespace automotive {
 
                     captureCounter++;
                 }
-
-
                 //............................code...............................
                 // Vehicle control data from the conference
                 Container container = getKeyValueDataStore().get(VehicleControl::ID());
@@ -178,10 +177,9 @@ namespace automotive {
                 // keep the angle in this range (60 - 120)
                 angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
                 // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
-                angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
+                // angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
                 // create the string to send
                 std::string toSend(1, angle);
-
                 // Send an order to the arduino only if the previous order is not euqal
                 if((angle != old)) serial->send(toSend);
 
@@ -207,14 +205,13 @@ namespace automotive {
         */
 
         void Proxy::nextString(const std::string &buffer)
-        {
+        {   
             // A byte to read at a time
-            unsigned char byte;
-
+            unsigned char byte; 
             // SensorBoardData  object to collect the sensor reads
             SensorBoardData SBD;
             // Number of sensors in the object
-            SBD.setNumberOfSensors(5);
+            SBD.setNumberOfSensors(6);
 
             // ID's for the sensors in the map (must be the same in the overtaking)
             const int32_t ULTRASONIC_FRONT_CENTER = 3;
@@ -222,74 +219,70 @@ namespace automotive {
             const int32_t INFRARED_FRONT_RIGHT = 0;
             const int32_t INFRARED_REAR_RIGHT = 2;
             const int32_t INFRARED_REAR_LEFT = 1;
+            const int32_t ODOMETER = 5;
 
             for(uint32_t i=0; i < buffer.size(); i++)
             {
-                for (uint32_t y=0; y< 5; y++) { cout << "there:: "<< y << ":: " << map.count(y) << '\n';}
                 //Check if the map contains the reads for all the sensors
                 if (map.count(ULTRASONIC_FRONT_CENTER) &&
                     map.count(ULTRASONIC_FRONT_RIGHT) &&
                     map.count(INFRARED_FRONT_RIGHT) &&
                     map.count(INFRARED_REAR_RIGHT) &&
-                    map.count(INFRARED_REAR_LEFT))
+                    map.count(INFRARED_REAR_LEFT) && 
+                    map.count(ODOMETER))
                 {
                     // Fill the SBD with the reads
                     SBD.setMapOfDistances(map);
+
+                    uint32_t x = 0;
+                    while(x < 6) 
+                        {
+                            cout << map[x] << ", ";
+                            x++;
+                        }
+                    cout << '\n';
+                    // Clear the map for new reads
+                    map.clear();
+
                     //Create a container out of the SBD
                     Container container(SBD);
                     //Distribute the container
                     distribute(container);
-
-                    cout << "proxy::ultraFront:: " << (int) map[ULTRASONIC_FRONT_RIGHT] << "\n";
-                    cout << "proxy::ultraSide:: " << (int) map[ULTRASONIC_FRONT_RIGHT] << "\n";
-                    cout << "proxy::irSideFront:: " << (int) map[INFRARED_FRONT_RIGHT] << "\n";
-                    cout << "proxy::irSideBack:: " << (int) map[INFRARED_REAR_RIGHT] << "\n";
-                    cout << "proxy::irBack:: " << (int) map[INFRARED_REAR_LEFT] << "\n";
-
-                    // Clear the map for new reads
-                    map.clear();
                 }
+                // Read on byte from the buffer
+                byte = buffer.at(i);
 
-				// Read on byte from the buffer
-                byte = buffer.at(i);		
-		
-                // USFront: 00 100 000 - 0 = 16...5 = 21, 7 = 23
-                if((byte >> 3) == 2) {
-                	// US1, read the first 3 bits
-                	unsigned char UI2 = byte & 7;
-                    map[ULTRASONIC_FRONT_CENTER] = (double) UI2;
-                    cout << "UI:: " << (int) UI2 << '\n';
-                }
-
-                // USSide: 00 011 000
-                if((byte >> 3) == 3){
+                // Switch the flag
+                // UltraSonic reads
+                if((byte >> 6) == 0)
+                {
+                    // UltraSonic1, read the first 3 bits
                     unsigned char UI1 = byte & 7;
+                    // UltraSonic2, read the second 3 bits
+                    unsigned char UI2 = (byte >> 3) & 7;
+
                     map[ULTRASONIC_FRONT_RIGHT] = (double) UI1;
+                    map[ULTRASONIC_FRONT_CENTER] = (double) UI2;
                 }
-
-                // IRFrontSide: 00 100 000
-                if((byte >> 3) == 4)
+                // IR reads
+                else if((byte >> 6) == 1)
                 {
-                	unsigned char IR2 = byte & 7;
-                	map[INFRARED_FRONT_RIGHT] = IR2;
-                    cout << "IR: " << (int) IR2 << '\n';
+                    // Read the first 3 bits
+                    unsigned char IR1 = byte & 7;
+                    // Read the second 3 bits
+                    unsigned char IR2 = (byte >> 3) & 7;
+                    map[INFRARED_REAR_RIGHT] = IR1;
+                    map[INFRARED_FRONT_RIGHT] = IR2;
                 }
-
-                // IRBackSide: 00 101 000
-                if((byte >> 3) == 5)
+                // IR third sensor read only
+                else if((byte >> 6) == 2)
                 {
-                	unsigned char IR1 = byte & 7;
-                	map[INFRARED_REAR_RIGHT] = IR1;
+                    // Read the first 3 bits
+                    unsigned char IR3 = byte & 7;
+                    unsigned char Odometer = (byte >> 3) & 7;
+                    map[INFRARED_REAR_LEFT] = IR3;
+                    map[ODOMETER] = Odometer;
                 }
-
-                // IRBack: 00 110 000
-                if((byte >> 3) == 6)
-                {
-                	unsigned char IR3 = byte & 7;
-                	map[INFRARED_REAR_LEFT] = IR3;
-                }
-
-                // // Odometer: 01 000 000
                 // // Odometer read TODO
                 // if((byte >> 6) == 3)
                 //{}

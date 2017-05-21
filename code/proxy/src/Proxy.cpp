@@ -171,17 +171,22 @@ namespace automotive {
                 VehicleControl vc = container.getData<VehicleControl>();
 
                 // turn the steering value to an angle
-                int steerAngle =  vc.getSteeringWheelAngle() * 180 / M_PI;
+                int raw = vc.getSteeringWheelAngle();
+                int steerAngle =  raw * 180 / M_PI;
                 unsigned char angle = (unsigned char)(steerAngle + 90);
 
-                // keep the angle in this range (60 - 120)
                 angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
+                cout << "RAW: " << raw << endl;
+                cout << "angle: " << (int) angle << endl; 
+                // keep the angle in this range (60 - 120)
+
                 // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
                 // angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
                 // create the string to send
                 std::string toSend(1, angle);
                 // Send an order to the arduino only if the previous order is not euqal
-                if((angle != old)) serial->send(toSend);
+                if((angle != old))
+                    serial->send(toSend);
 
                 // update the old value
                 old = angle;
@@ -234,12 +239,12 @@ namespace automotive {
                     // Fill the SBD with the reads
                     SBD.setMapOfDistances(map);
 
-                    uint32_t x = 0;
-                    while(x < 6) 
-                        {
-                            cout << map[x] << ", ";
-                            x++;
-                        }
+                    // uint32_t x = 0;
+                    // while(x < 6) 
+                    //     {
+                    //         cout << map[x] << ", ";
+                    //         x++;
+                    //     }
                     cout << '\n';
                     // Clear the map for new reads
                     map.clear();

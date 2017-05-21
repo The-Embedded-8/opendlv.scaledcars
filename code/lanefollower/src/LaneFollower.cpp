@@ -122,6 +122,7 @@ namespace automotive {
             cvCanny(gray,gray, 50,200,3);
             cvMerge(gray,gray,gray, NULL, m_image);
 
+
             static bool useRightLaneMarking = true;
             double e = 0;
 
@@ -231,8 +232,8 @@ namespace automotive {
 //            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
-            const double Kp = 1;
-            const double Ki = 0.0;
+            const double Kp = 1.978;
+            const double Ki = .000000001;
             const double Kd = 0;
 
             const double p = Kp * e;
@@ -302,7 +303,7 @@ namespace automotive {
 
             // Overall state machine handler.
 	        while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
-		        bool has_next_frame = false;
+		        bool has_next_frame = true;
 
 		        // Get the most recent available container for a SharedImage.
 		        Container c = getKeyValueDataStore().get(odcore::data::image::SharedImage::ID());
@@ -461,6 +462,8 @@ namespace automotive {
                 Container c2(m_vehicleControl);
                 // Send container.
                 getConference().send(c2);
+
+                // cout << "laneFollower::steeringAngle:: " << steeringAngle << '\n';
 	        }
 
 	        return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;

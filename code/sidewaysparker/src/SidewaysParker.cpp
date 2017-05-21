@@ -38,6 +38,9 @@ namespace automotive {
         using namespace automotive;
         using namespace automotive::miniature;
 
+
+
+
         SidewaysParker::SidewaysParker(const int32_t &argc, char **argv) :
             TimeTriggeredConferenceClientModule(argc, argv, "SidewaysParker") {
         }
@@ -52,16 +55,32 @@ namespace automotive {
             // This method will be call automatically _after_ return from body().
         }
 
+        //----------------------------------------------------------------------------------//
+
+
+        //----------------------------------------------------------------------------------//
+
+
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode SidewaysParker::body() {
-            const double ULTRASONIC_FRONT_RIGHT = 4;
-            const double INFRARED_REAR = 0;
-            double distanceOld = 0;
-            double absPathStart = 0;
-            double absPathEnd = 0;
+           // const double ULTRASONIC_FRONT_CENTER = 3;
+          // const double ULTRASONIC_FRONT_RIGHT = 4;
+            const double INFRARED_FRONT_RIGHT = 0;
+            const double INFRARED_REAR_RIGHT = 2;
+            const double INFRARED_REAR = 1;
+            const double ODOMETER = 5;
 
-            int stageMoving = 0;
-            int stageMeasuring = 0;
+            bool isObstacle = true;
+            bool isParking = false;
+            bool isBackObstacle = false;
+            //bool isTurnLeft = false; // use for parking
+
+            int irFrontSide;
+            //int irBackSide;
+            int irBack;
+            int odometer;
+            int oldOdometer = 0;
+
 
             while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
                 // 1. Get most recent vehicle data:
@@ -72,109 +91,103 @@ namespace automotive {
                 Container containerSensorBoardData = getKeyValueDataStore().get(automotive::miniature::SensorBoardData::ID());
                 SensorBoardData sbd = containerSensorBoardData.getData<SensorBoardData> ();
 
+                irFrontSide = (int)sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT);
+                //irBackSide = (int)sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT);
+                irBack = (int)sbd.getValueForKey_MapOfDistances(INFRARED_REAR);
+                odometer = (int)sbd.getValueForKey_MapOfDistances(ODOMETER);
+
                 // Create vehicle control data.
-                VehicleControl vc;
-		
-	       // cout << "StageMachine" <<stageMoving << endl;
-                // Moving state machine.
-                if (stageMoving == 0) {
-                    // Go forward.
-                    vc.setSpeed(2);
-                    vc.setSteeringWheelAngle(0);
-                }
-                if ((stageMoving > 0) && (stageMoving < 40)) {
-                    // Move slightly forward.
-                    vc.setSpeed(.4);
-                    vc.setSteeringWheelAngle(0);
-                    stageMoving++;
-                }
-                if ((stageMoving >= 40) && (stageMoving < 45)) {
-                    // Stop.
-                    vc.setSpeed(0);
-                    vc.setSteeringWheelAngle(0);
-                    stageMoving++;
-                }
-                if ((stageMoving >= 45) && (stageMoving < 85)) {
-                    // Backwards, steering wheel to the right.
-                    vc.setSpeed(-1.6);
-                    vc.setSteeringWheelAngle(25);
-                    stageMoving++;
-                }
-                if ((stageMoving >= 85) && (stageMoving < 220))  {
-                    // Backwards, steering wheel to the left. 
-		    cout << "Infrared" <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR) << endl;
-                    vc.setSpeed(-.175);
-                    vc.setSteeringWheelAngle(-25);
-                    stageMoving++;
-                }
-                if (stageMoving >= 220 && (sbd.getValueForKey_MapOfDistances(INFRARED_REAR)<0)) {
-		    cout << "Infrared" <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR) << endl;
-                    vc.setSpeed(-.175);
-                    vc.setSteeringWheelAngle(0);
-                    stageMoving++;
-		    }
-	         if  (stageMoving >= 220 && (sbd.getValueForKey_MapOfDistances(INFRARED_REAR)>=0)){
-                    // Stop.
-			cout << "Infrared stop" <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR) << endl;
-                    vc.setSpeed(0);
-                    vc.setSteeringWheelAngle(0);
-			}
-		
-                // Measuring state machine.
-                switch (stageMeasuring) {
-                    case 0:
-                        {
-                            // Initialize measurement.
-                            distanceOld = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT);
-                            stageMeasuring++;
-                        }
-                    break;
-                    case 1:
-                        {
-                            // Checking for sequence +, -.
-                            if ((distanceOld > 0) && (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) < 0)) {
-                                // Found sequence +, -.
-                                stageMeasuring = 2;
-                                absPathStart = vd.getAbsTraveledPath();
-                            }
-                            distanceOld = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT);
-                        }
-                    break;
-                    case 2:
-                        {
-                            // Checking for sequence -, +.
-                            if ((distanceOld < 0) && (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) > 0)) {
-                                // Found sequence -, +.
-                                stageMeasuring = 1;
-                                absPathEnd = vd.getAbsTraveledPath();
+                VehicleControl vcparker;
 
-                                const double GAP_SIZE = (absPathEnd - absPathStart);
-
-                                cerr << "Size = " << GAP_SIZE << endl;
-
-                                if ((stageMoving < 1) && (GAP_SIZE > 7)) {
-                                    stageMoving = 1;
-                                }
-                            }
-                            distanceOld = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT);
-                        }
-                    break;
+                // when the car is detecting obstacle how it should behave
+                if(isObstacle){
+                	// when the car don't detect obstacle anymore change the "isObstacle" to false
+                	if(irFrontSide > 1){
+                		isObstacle = false;
+                	}
+                	// trigger car to move
+                	if(irBack < 1){
+                		vcparker.setSpeed(1);
+                		vcparker.setSteeringWheelAngle(2);
+                	}else{
+                	vcparker.setSteeringWheelAngle(2);
+                	vcparker.setSpeed(2);}
                 }
-                cout << "ultraRight: " <<sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT)<<endl;
-                if(sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) >2 && sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) <4){
+                // when the car don't dectect obstacle it in the stage where checking for parking space is free or not
+                else if(!isObstacle){
+                	oldOdometer = startMeasuringGap(odometer,oldOdometer);
+                	// tell the car that the gap is enough for parking so tell it to park
+                	// Gap enough on 6
+                	if(getMeasuringGap() >= 6 && !isParking){
+                		isParking = true;
+                		stopMeasuringGap();
+                	}
+                	// there is an obstacle and parking gap is not enough for you
+                	else if(irFrontSide < 2 && !isParking){
+                		isObstacle = true;
+                		stopMeasuringGap();
+                	}
+                	// in the parking stage  /// Angle right = 3 -> 120, straight = 2 -> 82, left = 1 -> 30
+                	// Speed idle = 1, forward = 2, backward = 3
+                	else if(isParking){
+                		/// Have to fix naming of MeasuringGap :: it missunderstanding here
+                		// straight forward 2 :: to get car parallel to car beside
+                		if(getMeasuringGap() < 2 && !isBackObstacle){
+                			vcparker.setSteeringWheelAngle(2);
+                			vcparker.setSpeed(2);
+                		}
+                		// right backward :: 3 -- 7
+                		else if(getMeasuringGap() >= 2 && getMeasuringGap() < 7 && !isBackObstacle) {
+							vcparker.setSteeringWheelAngle(3);
+							vcparker.setSpeed(3);
+                		}
+                		// left backward :: 11 -- 14 and irback == 1-7
+                		else if(getMeasuringGap() >= 6 && irBack > 0 && !isBackObstacle) {
+                			vcparker.setSteeringWheelAngle(1);
+                			vcparker.setSpeed(3);
+                		}
+                		// stop :: irBack == 0
+                		else if(irBack < 1) {
+                			vcparker.setSteeringWheelAngle(2);
+                			vcparker.setSpeed(1);
+                			isBackObstacle = true;
+                			stopMeasuringGap();
+                		}
+                		// move forward a bit
+                		else if(getMeasuringGap() < 1 && isBackObstacle) {
+                		  	vcparker.setSteeringWheelAngle(2);
+                		  	vcparker.setSpeed(2);
+                		}
+                		else if(getMeasuringGap() >= 1 && isBackObstacle) {
+                			vcparker.setSteeringWheelAngle(2);
+                			vcparker.setSpeed(1);
+                		}
 
-                	vc.setSpeed(2);
 
-                	vc.setSteeringWheelAngle(60);
+                	}
+                	// continue moving forward
+                	else{
+                		vcparker.setSteeringWheelAngle(2);
+                		vcparker.setSpeed(2);
+                	}
                 }
+
+                //cout << "ultraFront: " <<sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER)<<endl;
+                //cout << "ultraRight: " <<sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT)<<endl;
+                cout << "infraRedFrontRight: " <<sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT)<<endl;
+                cout << "infraRedRearRight: " <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT)<<endl;
+                cout << "infraRedRear: " <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR)<<endl;
+                cout << "Distance: " <<getMeasuringGap()<<endl;
+                cout << "odometer: " <<sbd.getValueForKey_MapOfDistances(ODOMETER)<<endl;
+
                 // Create container for finally sending the data.
-                Container c(vc);
+                Container c(vcparker);
                 // Send container.
                 getConference().send(c);
+
             }
 
             return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;
         }
     }
-} // automotive::miniature
-
+} // automotive::miniature}

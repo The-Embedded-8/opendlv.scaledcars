@@ -27,6 +27,8 @@ namespace automotive {
 
         using namespace std;
 
+        static int distance = 0;
+
         /**
          * This class is a skeleton to send driving commands to Hesperia-light's vehicle driving dynamics simulation.
          */
@@ -68,6 +70,31 @@ namespace automotive {
                 virtual void setUp();
 
                 virtual void tearDown();
+
+            public:
+	// start counting the tick each time car move
+	int startMeasuringGap(int odometer, int oldOdometer) {
+		if (odometer != oldOdometer) {
+			distance++;
+		}
+		oldOdometer = odometer;
+		return oldOdometer;
+	}
+
+	// stop counting the tick
+	void stopMeasuringGap() {
+		distance = 0;
+	}
+
+	//        // reset the tick to 0 so that if we want to re counter the car move again from 0
+	//        void resetMeasuringGap(){
+	//
+	//        }
+
+	// Get the gap size
+	int getMeasuringGap() {
+		return distance;
+	}
         };
 
     }

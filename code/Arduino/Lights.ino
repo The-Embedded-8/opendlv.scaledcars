@@ -18,21 +18,23 @@ void loop() {
 }
 
 void blinkLeft() {
-  for(int i = 0;i<2;i++){
-    strip.setPixelColor(i, 255,165,0);
+    strip.setPixelColor(0, 255,165,0);
+     strip.setPixelColor(1, 255,165,0);
     strip.show();
     delay(25);
-    strip.setPixelColor(i, 0);
-  }
+    strip.setPixelColor(0, 0);
+    strip.setPixelColor(1, 0);
+    strip.show();
 }
 
 void blinkRight() {
-  for(int i = 6;i<8;i++){
-    strip.setPixelColor(i, 255,165,0);
+    strip.setPixelColor(6, 255,165,0);
+    strip.setPixelColor(7, 255,165,0);
     strip.show();
     delay(25);
-    strip.setPixelColor(i, 0);
-  }
+    strip.setPixelColor(6, 0);
+    strip.setPixelColor(7, 0);
+    strip.show();
 }
 
 //static void chase(uint32_t c) {

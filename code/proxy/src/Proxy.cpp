@@ -56,7 +56,8 @@ using namespace odtools::recorder;
 
 namespace automotive {
     namespace miniature {
-	// Map to map the sensor reads with the sensor
+
+        // Map to map the sensor reads with the sensor
         static map<uint32_t, double> map;
 
         Proxy::Proxy(const int32_t &argc, char **argv) :
@@ -186,7 +187,6 @@ namespace automotive {
                 // create the string to send
                std::string toSend(1, packed);
 
-                //std::cout << "fromParker " << (int)packed<< std::endl;
                 // Send an order to the arduino only if the previous order is not euqal
                 if((packed != old)) serial->send(toSend);
 

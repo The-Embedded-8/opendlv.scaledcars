@@ -173,11 +173,12 @@ namespace automotive {
                 // turn the steering value to an angle
                 int steerAngle =  vc.getSteeringWheelAngle() * 180 / M_PI;
                 unsigned char angle = (unsigned char)(steerAngle + 90);
+                
 
                 // keep the angle in this range (60 - 120)
-                angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
+                // angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
                 // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
-                // angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
+                 //angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
                 // create the string to send
                 std::string toSend(1, angle);
                 // Send an order to the arduino only if the previous order is not euqal

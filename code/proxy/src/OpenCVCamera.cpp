@@ -83,7 +83,7 @@ namespace automotive {
             if ( (dest != NULL) && (size > 0) && (m_image != NULL) ) {
                 ::memcpy(dest, m_image->imageData, size);
 
-                // cvShowImage("WindowShowImage", m_image);
+                cvShowImage("WindowShowImage", m_image);
                 cvWaitKey(10);
 
                 retVal = true;

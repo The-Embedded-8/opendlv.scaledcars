@@ -234,11 +234,11 @@ namespace automotive {
 //            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
-            const double Kp = 22.5;
+            const double Kp = 25.5;
             // 0.4482626884328734;
             const double Ki = 8.5;
             //3.103197570937628;
-            const double Kd = 1.0;
+            const double Kd = 1;
                 //0.030450210485408566;
 
             const double p = Kp * e;
@@ -288,14 +288,14 @@ namespace automotive {
             const int32_t INFRARED_FRONT_RIGHT = 0;
             const int32_t INFRARED_REAR_RIGHT = 2;
 
-            const double OVERTAKING_DISTANCE = 2;
+            const double OVERTAKING_DISTANCE = 3;
             //const double HEADING_PARALLEL = 0.04;
 
             // Overall state machines for moving and measuring.
-            enum StateMachineMoving { FORWARD, TO_LEFT_LANE_LEFT_TURN, TO_LEFT_LANE_RIGHT_TURN, CONTINUE_ON_LEFT_LANE, TO_RIGHT_LANE_RIGHT_TURN, TO_RIGHT_LANE_LEFT_TURN };
+            enum StateMachineMoving { IDLE,FORWARD, TO_LEFT_LANE_LEFT_TURN, TO_LEFT_LANE_RIGHT_TURN, CONTINUE_ON_LEFT_LANE, TO_RIGHT_LANE_RIGHT_TURN, TO_RIGHT_LANE_LEFT_TURN };
             enum StateMachineMeasuring { DISABLE, FIND_OBJECT_PLAUSIBLE, HAVE_FRONT_IR, END_OF_OBJECT };
 
-            StateMachineMoving stageMoving = FORWARD;
+            StateMachineMoving stageMoving = IDLE;
             StateMachineMeasuring stageMeasuring = FIND_OBJECT_PLAUSIBLE;
 
             // State counter for dynamically moving back to right lane.
@@ -335,7 +335,13 @@ namespace automotive {
                     SensorBoardData sbd = containerSensorBoardData.getData<SensorBoardData> ();
 
                     // Moving state machine.
-                    if (stageMoving == FORWARD) {
+
+                    if(stageMoving == IDLE) {
+                        m_vehicleControl.setSteeringWheelAngle(0);
+                        has_next_frame = false;
+                    }
+                     else if (stageMoving == FORWARD) {
+                        has_next_frame = true;
                         // Use m_vehicleControl data from image processing.
 
                         stageToRightLaneLeftTurn = 0;
@@ -343,9 +349,9 @@ namespace automotive {
                     }
                     else if (stageMoving == TO_LEFT_LANE_LEFT_TURN) {
                         // Move to the left lane: Turn left part until both IRs see something.
-                        m_vehicleControl.setSpeed(2);
+                       // m_vehicleControl.setSpeed(2);
                         m_vehicleControl.setSteeringWheelAngle(-30);
-                   
+                        //has_next_frame = false;
 
                         // State machine measuring: Both IRs need to see something before leaving this moving state.
                         //stageMoving = TO_LEFT_LANE_RIGHT_TURN;
@@ -361,9 +367,10 @@ namespace automotive {
                       //  m_vehicleControl.setSpeed(1);
                       //  m_vehicleControl.setSteeringWheelAngle(25)
 
-                        m_vehicleControl.setSpeed(0.8);
-
-                        m_vehicleControl.setSteeringWheelAngle(30);
+                       // m_vehicleControl.setSpeed(0.8);
+                        //has_next_frame = false;
+                        m_vehicleControl.setSteeringWheelAngle(40);
+                       
 
                         stageToRightLaneLeftTurn++;
 
@@ -373,6 +380,7 @@ namespace automotive {
 
                         if(sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) <= 1) {
                         stageMoving = CONTINUE_ON_LEFT_LANE;
+                    
                     }
         
                         
@@ -384,21 +392,25 @@ namespace automotive {
                         //m_vehicleControl.setSteeringWheelAngle(0);
                         cout << "CONTINUE_ON_LEFT_LANE" << endl;
                         // Move to the left lane: Passing stage.
-                        cout << desiredSteering << endl;
+                        //m_vehicleControl.setSteeringWheelAngle(12);
+                        has_next_frame = false;
 
+                        m_vehicleControl.setSteeringWheelAngle(30);
                         // Use m_vehicleControl data from image processing.
-
+                            cout << stageToRightLaneRightTurn  << endl;
+                            cout << stageToRightLaneLeftTurn << endl;
 
                         // Find end of object.
                         //stageMeasuring = END_OF_OBJECT;
                     }
                     else if (stageMoving == TO_RIGHT_LANE_RIGHT_TURN) {
                         // Move to the right lane: Turn right part.
-                        m_vehicleControl.setSpeed(0.8);
-                        m_vehicleControl.setSteeringWheelAngle(30);
-
+                       // m_vehicleControl.setSpeed(0.8);
+                        has_next_frame = false;
+                        m_vehicleControl.setSteeringWheelAngle(20);
+                      
                         stageToRightLaneRightTurn--;
-                        if (stageToRightLaneRightTurn == 0) {
+                        if (true) {
                             stageMoving = TO_RIGHT_LANE_LEFT_TURN;
 
                         }
@@ -406,13 +418,15 @@ namespace automotive {
                     }
                     else if (stageMoving == TO_RIGHT_LANE_LEFT_TURN) {
                         // Move to the left lane: Turn left part.
-                       m_vehicleControl.setSpeed(0.8);
+                       //m_vehicleControl.setSpeed(0.8);
+                      // m_vehicleControl.setSteeringWheelAngle(-30);
+                       has_next_frame = false;
                        m_vehicleControl.setSteeringWheelAngle(-30);
 
                         cout << "TO_RIGHT_LANE_LEFT_TURN" << endl;
 
                         stageToRightLaneLeftTurn--;
-                        if (stageToRightLaneLeftTurn < 30) {
+                        if (stageToRightLaneLeftTurn <  stageToRightLaneLeftTurn / 4) {
                             cout << "RESET" << endl;
                             // Start over.
                             stageMoving = FORWARD;
@@ -453,7 +467,7 @@ namespace automotive {
                         cout << "FIND_OBJECT_PLAUSIBLE" << endl;
                         double US = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
                         if (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER) <= OVERTAKING_DISTANCE && US > 0) {
-                            cout << sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
+                            //cout << sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
                            stageMoving = TO_LEFT_LANE_LEFT_TURN;
 
                             // Disable measuring until requested from moving state machine again.

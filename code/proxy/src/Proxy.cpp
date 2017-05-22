@@ -171,18 +171,13 @@ namespace automotive {
                 VehicleControl vc = container.getData<VehicleControl>();
 
                 // turn the steering value to an angle
-                int steerAngle =  vc.getSteeringWheelAngle() * 180 / M_PI;
-                unsigned char angle = (unsigned char)(steerAngle + 90);
-                
 
-                // keep the angle in this range (60 - 120)
-                // angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
-                // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
-                 //angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
-                // create the string to send
+                unsigned char angle = (unsigned char)(vc.getSteeringWheelAngle() + 80);
+
                 std::string toSend(1, angle);
                 // Send an order to the arduino only if the previous order is not euqal
-                if((angle != old)) serial->send(toSend);
+                if((angle != old))
+                    serial->send(toSend);
 
                 // update the old value
                 old = angle;
@@ -280,14 +275,10 @@ namespace automotive {
                 {
                     // Read the first 3 bits
                     unsigned char IR3 = byte & 7;
-                    unsigned char Odometer = (byte >> 3) & 7;
+                    unsigned char Odometer = (byte >> 3) & 1;
                     map[INFRARED_REAR_LEFT] = IR3;
                     map[ODOMETER] = Odometer;
                 }
-                // // Odometer read TODO
-                // if((byte >> 6) == 3)
-                //{}
-                // break;
             }
         }
     }

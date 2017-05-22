@@ -229,13 +229,17 @@ namespace automotive {
             else {
                 m_eSum += e;
             }
+//            const double Kp = 2.5;
+//            const double Ki = 8.5;
+//            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
-            const double Kp = 0.77777;
-            const double Ki = .0;
+            const double Kp = 22.5;
+            // 0.4482626884328734;
+            const double Ki = 8.5;
             //3.103197570937628;
-            const double Kd = 0.0;
-            //0.030450210485408566;
+            const double Kd = 1.0;
+                //0.030450210485408566;
 
             const double p = Kp * e;
             const double i = Ki * timeStep * m_eSum;
@@ -247,11 +251,11 @@ namespace automotive {
             if (fabs(e) > 1e-2) {
                 desiredSteering = y;
 
-                if (desiredSteering > 25.0) {
-                    desiredSteering = 25.0;
+                if (desiredSteering > 80.0) {
+                    desiredSteering = 80.0;
                 }
-                if (desiredSteering < -25.0) {
-                    desiredSteering = -25.0;
+                if (desiredSteering < -80.0) {
+                    desiredSteering = -80.0;
                 }
             }
           //  cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
@@ -284,7 +288,7 @@ namespace automotive {
             const int32_t INFRARED_FRONT_RIGHT = 0;
             const int32_t INFRARED_REAR_RIGHT = 2;
 
-            const double OVERTAKING_DISTANCE = 3;
+            const double OVERTAKING_DISTANCE = 2;
             //const double HEADING_PARALLEL = 0.04;
 
             // Overall state machines for moving and measuring.
@@ -340,8 +344,9 @@ namespace automotive {
                     else if (stageMoving == TO_LEFT_LANE_LEFT_TURN) {
                         // Move to the left lane: Turn left part until both IRs see something.
                         m_vehicleControl.setSpeed(2);
-                        m_vehicleControl.setSteeringWheelAngle(-20);
+                        m_vehicleControl.setSteeringWheelAngle(-30);
                    
+
                         // State machine measuring: Both IRs need to see something before leaving this moving state.
                         //stageMoving = TO_LEFT_LANE_RIGHT_TURN;
                         stageMeasuring = HAVE_FRONT_IR;
@@ -356,9 +361,9 @@ namespace automotive {
                       //  m_vehicleControl.setSpeed(1);
                       //  m_vehicleControl.setSteeringWheelAngle(25)
 
-                       // m_vehicleControl.setSpeed(0.8);
+                        m_vehicleControl.setSpeed(0.8);
 
-                      //  m_vehicleControl.setSteeringWheelAngle(25);
+                        m_vehicleControl.setSteeringWheelAngle(30);
 
                         stageToRightLaneLeftTurn++;
 
@@ -366,16 +371,20 @@ namespace automotive {
                         // State machine measuring: Both IRs need to have the same distance before leaving this moving state.
                         stageMeasuring = END_OF_OBJECT;
 
-                    if(sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) <= 1) {
+                        if(sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) <= 1) {
                         stageMoving = CONTINUE_ON_LEFT_LANE;
-                    }                       
+                    }
+        
+                        
+                        
+
                         cout << "TO_LEFT_LANE_RIGHT_TURN" << endl;
                     }
                     else if (stageMoving == CONTINUE_ON_LEFT_LANE) {
                         //m_vehicleControl.setSteeringWheelAngle(0);
                         cout << "CONTINUE_ON_LEFT_LANE" << endl;
                         // Move to the left lane: Passing stage.
-                        
+                        cout << desiredSteering << endl;
 
                         // Use m_vehicleControl data from image processing.
 
@@ -386,7 +395,7 @@ namespace automotive {
                     else if (stageMoving == TO_RIGHT_LANE_RIGHT_TURN) {
                         // Move to the right lane: Turn right part.
                         m_vehicleControl.setSpeed(0.8);
-                        m_vehicleControl.setSteeringWheelAngle(20);
+                        m_vehicleControl.setSteeringWheelAngle(30);
 
                         stageToRightLaneRightTurn--;
                         if (stageToRightLaneRightTurn == 0) {
@@ -398,12 +407,12 @@ namespace automotive {
                     else if (stageMoving == TO_RIGHT_LANE_LEFT_TURN) {
                         // Move to the left lane: Turn left part.
                        m_vehicleControl.setSpeed(0.8);
-                       m_vehicleControl.setSteeringWheelAngle(-20);
+                       m_vehicleControl.setSteeringWheelAngle(-30);
 
                         cout << "TO_RIGHT_LANE_LEFT_TURN" << endl;
 
                         stageToRightLaneLeftTurn--;
-                        if (stageToRightLaneLeftTurn < 100) {
+                        if (stageToRightLaneLeftTurn < 30) {
                             cout << "RESET" << endl;
                             // Start over.
                             stageMoving = FORWARD;
@@ -443,7 +452,6 @@ namespace automotive {
                      if (stageMeasuring == FIND_OBJECT_PLAUSIBLE) {
                         cout << "FIND_OBJECT_PLAUSIBLE" << endl;
                         double US = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
-                
                         if (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER) <= OVERTAKING_DISTANCE && US > 0) {
                             cout << sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
                            stageMoving = TO_LEFT_LANE_LEFT_TURN;
@@ -467,9 +475,9 @@ namespace automotive {
                     else if (stageMeasuring == END_OF_OBJECT) {
                         cout << "END_OF_OBJECT" << endl;
                         // Find end of object.
-                        //  distanceToObstacle = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT);
+                      //  distanceToObstacle = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT);
 
-                        if (sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) >= 4) {
+                        if (sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) >= 3) {
                             // Move to right lane again.
                             stageMoving = TO_RIGHT_LANE_RIGHT_TURN;
 

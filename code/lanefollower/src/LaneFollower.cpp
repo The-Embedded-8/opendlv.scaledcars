@@ -116,6 +116,7 @@ namespace automotive {
         }
 
         void LaneFollower::processImage() {
+
             IplImage *gray = cvCreateImage(cvGetSize(m_image),IPL_DEPTH_8U,1);
             cvCvtColor(m_image,gray,CV_BGR2GRAY);
             cvSmooth(gray,gray, CV_BLUR, 3,3);
@@ -130,7 +131,7 @@ namespace automotive {
             const int32_t distance = 280;
 
             TimeStamp beforeImageProcessing;
-            for(int32_t y = m_image->height - 8; y > m_image->height * .6; y -= 10) {
+            for(int32_t y = (m_image->height) - 8; y > (m_image->height) * .6; y -= 10) {
                 // Search from middle to the left:
                 CvScalar pixelLeft;
                 CvPoint left;
@@ -227,14 +228,9 @@ namespace automotive {
             else {
                 m_eSum += e;
             }
-//            const double Kp = 2.5;
-//            const double Ki = 8.5;
-//            const double Kd = 0;
-
-            // The following values have been determined by Twiddle algorithm.
-            const double Kp = 1.978;
-            const double Ki = .000000001;
-            const double Kd = 0;
+            const double Kp = 22.5;
+            const double Ki = 8.5;
+            const double Kd = 1;
 
             const double p = Kp * e;
             const double i = Ki * timeStep * m_eSum;
@@ -244,16 +240,16 @@ namespace automotive {
             const double y = p + i + d;
             double desiredSteering = 0;
             if (fabs(e) > 1e-2) {
-                desiredSteering = y;
+                desiredSteering =  y;
 
-                if (desiredSteering > 25.0) {
-                    desiredSteering = 25.0;
+                if (desiredSteering > 80.0) {
+                    desiredSteering = 80.0;
                 }
-                if (desiredSteering < -25.0) {
-                    desiredSteering = -25.0;
+                if (desiredSteering < -80.0) {
+                    desiredSteering = -80.0;
                 }
             }
-            // cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
+            cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
 
 
             // Go forward.

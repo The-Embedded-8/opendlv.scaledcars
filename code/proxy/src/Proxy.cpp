@@ -171,12 +171,9 @@ namespace automotive {
                 VehicleControl vc = container.getData<VehicleControl>();
 
                 // turn the steering value to an angle
-                int raw = vc.getSteeringWheelAngle();
-                int steerAngle =  raw * 180 / M_PI;
-                unsigned char angle = (unsigned char)(steerAngle + 90);
 
-                angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
-                cout << "RAW: " << raw << endl;
+                unsigned char angle = (unsigned char)(vc.getSteeringWheelAngle() + 80);
+
                 cout << "angle: " << (int) angle << endl; 
                 // keep the angle in this range (60 - 120)
 

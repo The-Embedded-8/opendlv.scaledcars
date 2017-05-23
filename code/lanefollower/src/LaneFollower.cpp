@@ -128,7 +128,7 @@ namespace automotive {
             double e = 0;
 
             const int32_t CONTROL_SCANLINE = 462; // calibrated length to right: 280px
-            const int32_t distance = 280;
+            const int32_t distance = 150;
 
             TimeStamp beforeImageProcessing;
             for(int32_t y = (m_image->height) - 8; y > (m_image->height) * .6; y -= 10) {

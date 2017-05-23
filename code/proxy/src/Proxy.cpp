@@ -177,9 +177,6 @@ namespace automotive {
                 cout << "angle: " << (int) angle << endl; 
                 // keep the angle in this range (60 - 120)
 
-                // set the 8th bit if speed is 2 (move forward) or 0 if it's 1 (move backward) 
-                // angle = angle | 128 * ((int32_t) vc.getSpeed() == 2);
-                // create the string to send
                 std::string toSend(1, angle);
                 // Send an order to the arduino only if the previous order is not euqal
                 if((angle != old))
@@ -235,13 +232,7 @@ namespace automotive {
                 {
                     // Fill the SBD with the reads
                     SBD.setMapOfDistances(map);
-
-                    // uint32_t x = 0;
-                    // while(x < 6) 
-                    //     {
-                    //         cout << map[x] << ", ";
-                    //         x++;
-                    //     }
+                    
                     cout << '\n';
                     // Clear the map for new reads
                     map.clear();

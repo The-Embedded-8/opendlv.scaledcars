@@ -55,12 +55,6 @@ namespace automotive {
             // This method will be call automatically _after_ return from body().
         }
 
-        //----------------------------------------------------------------------------------//
-
-
-        //----------------------------------------------------------------------------------//
-
-
         // This method will do the main data processing job.
         odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode SidewaysParker::body() {
            // const double ULTRASONIC_FRONT_CENTER = 3;
@@ -141,12 +135,13 @@ namespace automotive {
 							vcparker.setSteeringWheelAngle(3);
 							vcparker.setSpeed(3);
                 		}
+				// Straight backward :: 8
                 		else if(getMeasuringDistance() >= 8 && getMeasuringDistance() < 9 && !isBackObstacle) {
 							vcparker.setSteeringWheelAngle(2);
 							vcparker.setSpeed(3);
                 		}
-                		// left backward :: 11 -- 14 and irback == 1-7
-                		else if(getMeasuringDistance() >= 10 && irBack > 0 && !isBackObstacle) {
+                		// left backward :: 9 and irback == 1-7
+                		else if(getMeasuringDistance() >= 9 && irBack > 0 && !isBackObstacle) {
                 			vcparker.setSteeringWheelAngle(1);
                 			vcparker.setSpeed(3);
                 		}
@@ -157,11 +152,12 @@ namespace automotive {
                 			isBackObstacle = true;
                 			resetMeasuringDistance();
                 		}
-                		// move forward a bit
+                		// move forward 1 step
                 		else if(getMeasuringDistance() < 1 && isBackObstacle) {
                 		  	vcparker.setSteeringWheelAngle(2);
                 		  	vcparker.setSpeed(2);
                 		}
+				// stop
                 		else if(getMeasuringDistance() >= 1 && isBackObstacle) {
                 			vcparker.setSteeringWheelAngle(2);
                 			vcparker.setSpeed(1);

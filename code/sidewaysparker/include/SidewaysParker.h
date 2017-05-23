@@ -73,7 +73,7 @@ namespace automotive {
 
             public:
 	// start counting the tick each time car move
-	int startMeasuringGap(int odometer, int oldOdometer) {
+	int startMeasuringDistance(int odometer, int oldOdometer) {
 		if (odometer != oldOdometer) {
 			distance++;
 		}
@@ -82,7 +82,7 @@ namespace automotive {
 	}
 
 	// stop counting the tick
-	void stopMeasuringGap() {
+	void resetMeasuringDistance() {
 		distance = 0;
 	}
 
@@ -92,7 +92,7 @@ namespace automotive {
 	//        }
 
 	// Get the gap size
-	int getMeasuringGap() {
+	int getMeasuringDistance() {
 		return distance;
 	}
         };

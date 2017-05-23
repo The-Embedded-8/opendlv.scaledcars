@@ -115,34 +115,38 @@ namespace automotive {
                 }
                 // when the car don't dectect obstacle it in the stage where checking for parking space is free or not
                 else if(!isObstacle){
-                	oldOdometer = startMeasuringGap(odometer,oldOdometer);
+                	oldOdometer = startMeasuringDistance(odometer,oldOdometer);
                 	// tell the car that the gap is enough for parking so tell it to park
                 	// Gap enough on 6
-                	if(getMeasuringGap() >= 6 && !isParking){
+                	if(getMeasuringDistance() >= 6 && !isParking){
                 		isParking = true;
-                		stopMeasuringGap();
+                		resetMeasuringDistance();
                 	}
                 	// there is an obstacle and parking gap is not enough for you
                 	else if(irFrontSide < 2 && !isParking){
                 		isObstacle = true;
-                		stopMeasuringGap();
+                		resetMeasuringDistance();
                 	}
                 	// in the parking stage  /// Angle right = 3 -> 120, straight = 2 -> 82, left = 1 -> 30
                 	// Speed idle = 1, forward = 2, backward = 3
                 	else if(isParking){
                 		/// Have to fix naming of MeasuringGap :: it missunderstanding here
                 		// straight forward 2 :: to get car parallel to car beside
-                		if(getMeasuringGap() < 2 && !isBackObstacle){
+                		if(getMeasuringDistance() < 3 && !isBackObstacle){
                 			vcparker.setSteeringWheelAngle(2);
                 			vcparker.setSpeed(2);
                 		}
                 		// right backward :: 3 -- 7
-                		else if(getMeasuringGap() >= 2 && getMeasuringGap() < 7 && !isBackObstacle) {
+                		else if(getMeasuringDistance() >= 3 && getMeasuringDistance() < 8 && !isBackObstacle) {
 							vcparker.setSteeringWheelAngle(3);
 							vcparker.setSpeed(3);
                 		}
+                		else if(getMeasuringDistance() >= 8 && getMeasuringDistance() < 9 && !isBackObstacle) {
+							vcparker.setSteeringWheelAngle(2);
+							vcparker.setSpeed(3);
+                		}
                 		// left backward :: 11 -- 14 and irback == 1-7
-                		else if(getMeasuringGap() >= 6 && irBack > 0 && !isBackObstacle) {
+                		else if(getMeasuringDistance() >= 10 && irBack > 0 && !isBackObstacle) {
                 			vcparker.setSteeringWheelAngle(1);
                 			vcparker.setSpeed(3);
                 		}
@@ -151,14 +155,14 @@ namespace automotive {
                 			vcparker.setSteeringWheelAngle(2);
                 			vcparker.setSpeed(1);
                 			isBackObstacle = true;
-                			stopMeasuringGap();
+                			resetMeasuringDistance();
                 		}
                 		// move forward a bit
-                		else if(getMeasuringGap() < 1 && isBackObstacle) {
+                		else if(getMeasuringDistance() < 1 && isBackObstacle) {
                 		  	vcparker.setSteeringWheelAngle(2);
                 		  	vcparker.setSpeed(2);
                 		}
-                		else if(getMeasuringGap() >= 1 && isBackObstacle) {
+                		else if(getMeasuringDistance() >= 1 && isBackObstacle) {
                 			vcparker.setSteeringWheelAngle(2);
                 			vcparker.setSpeed(1);
                 		}
@@ -177,7 +181,7 @@ namespace automotive {
                 cout << "infraRedFrontRight: " <<sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT)<<endl;
                 cout << "infraRedRearRight: " <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT)<<endl;
                 cout << "infraRedRear: " <<sbd.getValueForKey_MapOfDistances(INFRARED_REAR)<<endl;
-                cout << "Distance: " <<getMeasuringGap()<<endl;
+                cout << "Distance: " <<getMeasuringDistance()<<endl;
                 cout << "odometer: " <<sbd.getValueForKey_MapOfDistances(ODOMETER)<<endl;
 
                 // Create container for finally sending the data.

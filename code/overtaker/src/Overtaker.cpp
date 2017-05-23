@@ -278,26 +278,25 @@ namespace automotive {
 
             cvInitFont(&m_font, CV_FONT_HERSHEY_DUPLEX, hscale, vscale, shear, thickness, lineType);
 
-            // Parameters for overtaking.
+            // Sensor IDs.
             const int32_t ULTRASONIC_FRONT_CENTER = 3;
             const int32_t ULTRASONIC_FRONT_RIGHT = 4;
             const int32_t INFRARED_FRONT_RIGHT = 0;
             const int32_t INFRARED_REAR_RIGHT = 2;
-
+            // Overtaking parameters.
             const double OVERTAKING_DISTANCE = 3;
             const double FREE_LANE_DISTANCE = 5;
             const double FRONT_IR_TO_OBJECT = 1;
-            const double FRONT_IR_END_OF_OBJECT = 3;
+            const double FRONT_IR_SEARCH_END_OF_OBJECT = 3;
             const double REAR_IR_CONT_LANE = 1;
-
 
             // Overall state machines for moving and measuring.
             enum StateMachineMoving {
-            IDLE, FORWARD, TO_LEFT_LANE_LEFT_TURN, TO_LEFT_LANE_RIGHT_TURN, 
-            CONTINUE_ON_LEFT_LANE, TO_RIGHT_LANE_RIGHT_TURN, TO_RIGHT_LANE_LEFT_TURN };
+            IDLE, FORWARD, SWITCH_TO_LEFT, LEFT_LANE_CORRECT, 
+            CONTINUE_ON_LEFT_LANE, SWITCH_TO_RIGHT, RIGHT_LANE_CORRECT };
 
             enum StateMachineMeasuring {
-            DISABLE, FINDING_OBJECT, HAVE_FRONT_IR, END_OF_OBJECT };
+            DISABLE, FINDING_OBJECT, HAVE_FRONT_IR, SEARCH_END_OF_OBJECT };
             // Init state machines.
             StateMachineMoving stageMoving = IDLE;
             StateMachineMeasuring stageMeasuring = FINDING_OBJECT;
@@ -345,9 +344,8 @@ namespace automotive {
                     }
                      else if (stageMoving == FORWARD) {
                         has_next_frame = true;
-            
                     }
-                    else if (stageMoving == TO_LEFT_LANE_LEFT_TURN) {
+                    else if (stageMoving == SWITCH_TO_LEFT) {
                         // Move to the left lane: Turn left part until the front IR has closed up on the object.
                         m_vehicleControl.setSpeed(1);
                         m_vehicleControl.setSteeringWheelAngle(-30);
@@ -357,17 +355,15 @@ namespace automotive {
 
                         turnRightCounter++;
                     }
-                    else if (stageMoving == TO_LEFT_LANE_RIGHT_TURN) {
+                    else if (stageMoving == LEFT_LANE_CORRECT) {
                         // Move to the left lane: Turn right part until the rear IR has closed up on the object.
-                        m_vehicleControl.setSpeed(1);
                         has_next_frame = false;
+                        m_vehicleControl.setSpeed(1);
                         m_vehicleControl.setSteeringWheelAngle(40);
                        
                         turnLeftCounter++;
-
                         // State machine measuring: Stay in this state until the front IR has determined that the car has reached the end of the object.
-                        stageMeasuring = END_OF_OBJECT;
-
+                        stageMeasuring = SEARCH_END_OF_OBJECT;
                         // State machine movement: Stay in this state until the rear IR has determined the car has completed both turns on the left lane.
                         if(sbd.getValueForKey_MapOfDistances(INFRARED_REAR_RIGHT) <= REAR_IR_CONT_LANE) {
                         stageMoving = CONTINUE_ON_LEFT_LANE;
@@ -375,28 +371,26 @@ namespace automotive {
                     }
                     else if (stageMoving == CONTINUE_ON_LEFT_LANE) {
                         // Move to the left lane: Passing stage.
-                        m_vehicleControl.setSpeed(1);
-                    
                         has_next_frame = false;
-
+                        m_vehicleControl.setSpeed(1);
                         m_vehicleControl.setSteeringWheelAngle(30);
-                       
                     }
-                    else if (stageMoving == TO_RIGHT_LANE_RIGHT_TURN) {
-                        // Move to the right lane: Turn right until the front IR has reached the correct distance to begin the left turn of the right lane.
-                        m_vehicleControl.setSpeed(1);
-
+                    else if (stageMoving == SWITCH_TO_RIGHT) {
+                        // Move to the right lane: Turn right until the turnCounter decrements to meet the condition.
                         has_next_frame = false;
+                        m_vehicleControl.setSpeed(1);
                         m_vehicleControl.setSteeringWheelAngle(20);
                       
                         turnRightCounter--;
                         if (turnRightCounter <= 30) {
-                            stageMoving = TO_RIGHT_LANE_LEFT_TURN;
+                            stageMoving = RIGHT_LANE_CORRECT;
                         }
                     }
-                    else if (stageMoving == TO_RIGHT_LANE_LEFT_TURN) {
-                        // Move to 
+                    else if (stageMoving == RIGHT_LANE_CORRECT) {
+                        // Adjust on the right lane by turning left until the turnCounter decrements to meet
+                        // the condition then proceed to reset state machines, turnCounters and LaneFollower PID.
                        has_next_frame = false;
+                       m_vehicleControl.setSpeed(1);
                        m_vehicleControl.setSteeringWheelAngle(-30);
 
                         turnLeftCounter--;
@@ -417,8 +411,7 @@ namespace automotive {
                         double US = sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER);
                         // Start turning left once the front US has detected an object.
                         if (sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_CENTER) <= OVERTAKING_DISTANCE && US > 0) {
-                           stageMoving = TO_LEFT_LANE_LEFT_TURN;
-
+                           stageMoving = SWITCH_TO_LEFT;
                             // Disable measuring until requested from moving state machine again.
                             stageMeasuring = DISABLE;
                         }
@@ -430,20 +423,17 @@ namespace automotive {
                         // Remain in this stage until the front IR has closed up on the object.
                         if ( (sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) <= FRONT_IR_TO_OBJECT)) {
                             // Turn to right.
-                            stageMoving = TO_LEFT_LANE_RIGHT_TURN;
+                            stageMoving = LEFT_LANE_CORRECT;
                         }
                    
                     }
-                    else if (stageMeasuring == END_OF_OBJECT) {
+                    else if (stageMeasuring == SEARCH_END_OF_OBJECT) {
                         // Find end of object.
-                     
-
                         // Start turning  to the right once the front IR has reached the correct distance and the right US has determined the right lane is free.
-                        if (sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) >= FRONT_IR_END_OF_OBJECT &&
+                        if (sbd.getValueForKey_MapOfDistances(INFRARED_FRONT_RIGHT) >= FRONT_IR_SEARCH_END_OF_OBJECT &&
                             sbd.getValueForKey_MapOfDistances(ULTRASONIC_FRONT_RIGHT) >= FREE_LANE_DISTANCE) {
                             // Move to right lane again.
-                            stageMoving = TO_RIGHT_LANE_RIGHT_TURN; 
-
+                            stageMoving = SWITCH_TO_RIGHT; 
                             // Disable measuring until requested from moving state machine again.
                             stageMeasuring = DISABLE;
                         }

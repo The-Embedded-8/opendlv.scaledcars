@@ -33,7 +33,7 @@
 
 #include "LaneFollower.h"
 
-double desiredSteering = 0;
+
 
 
 namespace automotive {
@@ -209,7 +209,6 @@ namespace automotive {
             }
 
             TimeStamp afterImageProcessing;
-            //cerr << "Processing time: " << (afterImageProcessing.toMicroseconds() - beforeImageProcessing.toMicroseconds())/1000.0 << "ms." << endl;
 
             // Show resulting features.
             if (m_debug) {
@@ -229,17 +228,14 @@ namespace automotive {
             else {
                 m_eSum += e;
             }
-//            const double Kp = 2.5;
-//            const double Ki = 8.5;
-//            const double Kd = 0;
 
             // The following values have been determined by Twiddle algorithm.
             const double Kp = 25.5;
-            // 0.4482626884328734;
+
             const double Ki = 8.5;
-            //3.103197570937628;
+
             const double Kd = 1;
-                //0.030450210485408566;
+                
 
             const double p = Kp * e;
             const double i = Ki * timeStep * m_eSum;
@@ -247,7 +243,8 @@ namespace automotive {
             m_eOld = e;
 
             const double y = p + i + d;
-            desiredSteering = 0;
+            
+            double desiredSteering = 0;
             if (fabs(e) > 1e-2) {
                 desiredSteering = y;
 
@@ -258,7 +255,6 @@ namespace automotive {
                     desiredSteering = -80.0;
                 }
             }
-          //  cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
 
 
             // Go forward.

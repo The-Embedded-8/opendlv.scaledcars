@@ -172,22 +172,19 @@ namespace automotive {
                 Container container = getKeyValueDataStore().get(VehicleControl::ID());
                 VehicleControl vc = container.getData<VehicleControl>();
 
-                // turn the steering value to an angle
-      //          int steerAngle =  vc.getSteeringWheelAngle() * 180 / M_PI;
-        //        unsigned char angle = (unsigned char)(steerAngle + 90);
-               unsigned char angle = vc.getSteeringWheelAngle();
+                // get the angle and the speed from the sidewayparking
+                unsigned char angle = vc.getSteeringWheelAngle();
                 unsigned char speed = vc.getSpeed();
+                
+                // pack speed and angle for each have two bit
                 unsigned char packed = speed;
                 packed=packed<<2;
                 packed = packed| angle;
-                // keep the angle in this range (60 - 120)
- //               angle = (angle < 70 ? 60 : (angle > 120 ? 120 : angle));
-
 
                 // create the string to send
                std::string toSend(1, packed);
 
-                // Send an order to the arduino only if the previous order is not euqal
+                // Send an order to the arduino only if the previous order is not equal
                 if((packed != old)) serial->send(toSend);
 
                 // update the old value

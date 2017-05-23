@@ -176,7 +176,7 @@ namespace automotive {
                 unsigned char angle = vc.getSteeringWheelAngle();
                 unsigned char speed = vc.getSpeed();
                 
-                // pack speed and angle for each have two bit
+                // pack the speed and angle (2-bits each) in one byte 00 00 <speed>00<speed> <angle>00<angle>
                 unsigned char packed = speed;
                 packed=packed<<2;
                 packed = packed| angle;

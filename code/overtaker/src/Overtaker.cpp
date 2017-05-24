@@ -370,7 +370,7 @@ namespace automotive {
                     else if (stageMoving == CONTINUE_ON_LEFT_LANE) {
                         // Move to the left lane: Passing stage.
                         m_vehicleControl.setSpeed(VEHICLE_SPEED);
-                        m_vehicleControl.setSteeringWheelAngle(30);
+                        m_vehicleControl.setSteeringWheelAngle(0);
                     }
                     else if (stageMoving == SWITCH_TO_RIGHT) {
                         // Move to the right lane: Turn right until the turnCounter decrements to meet the condition.

@@ -343,7 +343,7 @@ namespace automotive {
                         m_vehicleControl.setSteeringWheelAngle(0);
                     }
                      else if (stageMoving == FORWARD) {
-                         m_vehicleControl.setSpeed(0);
+                         m_vehicleControl.setSpeed(VEHICLE_SPEED);
                          m_vehicleControl.setSteeringWheelAngle(0);
                     }
                     else if (stageMoving == SWITCH_TO_LEFT) {

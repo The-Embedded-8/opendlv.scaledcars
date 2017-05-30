@@ -109,7 +109,7 @@ void manual_control() {
   {
     case 1:
       leftLights();
-      steer = 30;
+      steer = 60;
       break;
     case 2:    
       steer = 83;

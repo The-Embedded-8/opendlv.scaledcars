@@ -289,17 +289,17 @@ namespace automotive {
             const double FRONT_IR_TO_OBJECT = 1;
             const double FRONT_IR_SEARCH_END_OF_OBJECT = 3;
             const double REAR_IR_CONT_LANE = 1;
-            const double VEHICLE_SPEED = 1;
+            const double VEHICLE_SPEED = 2;
 
             // Overall state machines for moving and measuring.
             enum StateMachineMoving {
-            IDLE, FORWARD, SWITCH_TO_LEFT, LEFT_LANE_CORRECT, 
+            FORWARD, SWITCH_TO_LEFT, LEFT_LANE_CORRECT, 
             CONTINUE_ON_LEFT_LANE, SWITCH_TO_RIGHT, RIGHT_LANE_CORRECT };
 
             enum StateMachineMeasuring {
             DISABLE, FINDING_OBJECT, HAVE_FRONT_IR, SEARCH_END_OF_OBJECT };
             // Init state machines.
-            StateMachineMoving stageMoving = IDLE;
+            StateMachineMoving stageMoving = FORWARD;
             StateMachineMeasuring stageMeasuring = FINDING_OBJECT;
 
             // State counter for dynamically moving back to right lane.
@@ -337,12 +337,7 @@ namespace automotive {
                     SensorBoardData sbd = containerSensorBoardData.getData<SensorBoardData> ();
 
                     // Moving state machine.
-
-                    if(stageMoving == IDLE) {
-                        m_vehicleControl.setSpeed(0);
-                        m_vehicleControl.setSteeringWheelAngle(0);
-                    }
-                     else if (stageMoving == FORWARD) {
+                    if (stageMoving == FORWARD) {
                          m_vehicleControl.setSpeed(VEHICLE_SPEED);
                          m_vehicleControl.setSteeringWheelAngle(0);
                     }
